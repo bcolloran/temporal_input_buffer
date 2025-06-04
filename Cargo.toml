@@ -1,0 +1,9 @@
+[package]
+name = "temporal_input_buffer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+easy_hash = { git = "https://github.com/bcolloran/easy_hash.git", branch = "master" }
+serde = { version = "1.0.214", features = ["derive"] }
