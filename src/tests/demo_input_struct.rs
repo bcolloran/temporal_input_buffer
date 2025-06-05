@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::input_trait::SimInput;
+use crate::input_trait::{SimInput, TestInputBytes};
 
 #[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct PlayerInput {
@@ -104,5 +104,11 @@ impl SimInput for PlayerInput {
     }
     fn from_bytes(bytes: Self::Bytes) -> Self {
         bytes.to_input()
+    }
+}
+
+impl TestInputBytes for PlayerInput {
+    fn new_test_simple(x: u32) -> Self::Bytes {
+        PlayerInputBinary::new_test_simple(x as u8)
     }
 }

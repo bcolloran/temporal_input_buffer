@@ -5,6 +5,7 @@ use crate::{
     multiplayer_input_manager::MultiplayerInputManager,
     multiplayer_input_manager_host::{HOST_PLAYER_NUM, HostInpugMgr},
     peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
+    tests::demo_input_struct::{PlayerInput, PlayerInputBinary},
     util_types::{PlayerInputSlice, PlayerNum},
 };
 
@@ -12,14 +13,16 @@ const MAX_TICKS_PREDICT_LOCF: u32 = 5;
 
 #[test]
 fn test_new_manager() {
-    let manager = MultiplayerInputManager::<HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
+    let manager =
+        MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
     assert_eq!(manager.inner.max_guest_ticks_behind, 5);
     assert!(manager.inner.guests_finalized_observations.is_empty());
 }
 
 #[test]
 fn test_snapshottable_sim_tick() {
-    let mut manager = MultiplayerInputManager::<HostInpugMgr>::new(2, 5, MAX_TICKS_PREDICT_LOCF);
+    let mut manager =
+        MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(2, 5, MAX_TICKS_PREDICT_LOCF);
 
     // Add some inputs for host
     for _ in 0..5 {
@@ -33,7 +36,7 @@ fn test_snapshottable_sim_tick() {
     let other_id = 1;
     let inputs_to_add = 3;
     let msg = MsgPayload::PeerInputs(
-        HostFinalizedSlice::new_test(other_id.into(), 0, 0, inputs_to_add).inputs,
+        HostFinalizedSlice::<PlayerInput>::new_test(other_id.into(), 0, 0, inputs_to_add).inputs,
     );
     manager.rx_guest_input_slice(other_id.into(), msg);
 
@@ -43,7 +46,8 @@ fn test_snapshottable_sim_tick() {
 
 #[test]
 fn test_get_finalization_start_for_peer() {
-    let mut manager = MultiplayerInputManager::<HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
+    let mut manager =
+        MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
 
     // Add some inputs for host
     for _ in 0..5 {
@@ -60,7 +64,7 @@ fn test_get_finalization_start_for_peer() {
     // add inputs for another player
     let other_id = 2;
     let inputs_to_add = 10;
-    let msg = MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, inputs_to_add));
+    let msg = MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, inputs_to_add));
     manager.rx_guest_input_slice(other_id.into(), msg);
 
     // now the host is aware of one other peer, but the peer
@@ -91,7 +95,8 @@ fn test_get_finalization_start_for_peer() {
 
 #[test]
 fn test_get_finalization_start_for_peer_2() {
-    let mut manager = MultiplayerInputManager::<HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
+    let mut manager =
+        MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
 
     // Add some inputs for host
     for _ in 0..5 {
@@ -102,7 +107,7 @@ fn test_get_finalization_start_for_peer_2() {
     let peer_2 = 2;
     let peer_3 = 3;
     let inputs_to_add = 10;
-    let msg = MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, inputs_to_add));
+    let msg = MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, inputs_to_add));
     manager.rx_guest_input_slice(peer_2.into(), msg.clone());
     manager.rx_guest_input_slice(peer_3.into(), msg);
 
@@ -177,8 +182,11 @@ fn test_get_finalization_start_for_peer_2() {
 #[test]
 fn test_get_msg_catch_up_with_no_acks() {
     let max_ticks_behind = 5;
-    let mut manager =
-        MultiplayerInputManager::<HostInpugMgr>::new(4, max_ticks_behind, MAX_TICKS_PREDICT_LOCF);
+    let mut manager = MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(
+        4,
+        max_ticks_behind,
+        MAX_TICKS_PREDICT_LOCF,
+    );
     let peer_id = 2;
 
     // Add 10 inputs for host
@@ -234,8 +242,11 @@ fn test_get_msg_catch_up_with_no_acks() {
 #[test]
 fn test_get_msg_catch_up_with_guest_acks() {
     let max_ticks_behind = 5;
-    let mut manager =
-        MultiplayerInputManager::<HostInpugMgr>::new(4, max_ticks_behind, MAX_TICKS_PREDICT_LOCF);
+    let mut manager = MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(
+        4,
+        max_ticks_behind,
+        MAX_TICKS_PREDICT_LOCF,
+    );
     let peer_id = 2;
 
     // Add 10 inputs for host
@@ -295,8 +306,11 @@ fn test_get_msg_catch_up_with_guest_acks() {
 #[test]
 pub fn test_get_msg_host_finalized_slice_no_ack() {
     let max_ticks_behind = 5;
-    let mut manager =
-        MultiplayerInputManager::<HostInpugMgr>::new(4, max_ticks_behind, MAX_TICKS_PREDICT_LOCF);
+    let mut manager = MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(
+        4,
+        max_ticks_behind,
+        MAX_TICKS_PREDICT_LOCF,
+    );
     let peer_2 = 2;
     let peer_3 = 3;
 
@@ -307,11 +321,11 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
     // rx 5 inputs for peer_2, and 7 inputs for peer_3
     manager.rx_guest_input_slice(
         peer_2.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 5)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 5)),
     );
     manager.rx_guest_input_slice(
         peer_3.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 7)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 7)),
     );
 
     // no peers have acked any inputs yet, so the host should be
@@ -349,8 +363,11 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
 
 pub fn test_get_msg_host_finalized_slice_1_ack() {
     let max_ticks_behind = 5;
-    let mut manager =
-        MultiplayerInputManager::<HostInpugMgr>::new(4, max_ticks_behind, MAX_TICKS_PREDICT_LOCF);
+    let mut manager = MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(
+        4,
+        max_ticks_behind,
+        MAX_TICKS_PREDICT_LOCF,
+    );
     let peer_2 = 2;
     let peer_3 = 3;
 
@@ -361,11 +378,11 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     // rx 5 inputs for peer_2, and 7 inputs for peer_3
     manager.rx_guest_input_slice(
         peer_2.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 5)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 5)),
     );
     manager.rx_guest_input_slice(
         peer_3.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 7)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 7)),
     );
 
     // have peer_2 ack inputs:
@@ -416,8 +433,11 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
 
 pub fn test_get_msg_host_finalized_slice_2_acks() {
     let max_ticks_behind = 5;
-    let mut manager =
-        MultiplayerInputManager::<HostInpugMgr>::new(4, max_ticks_behind, MAX_TICKS_PREDICT_LOCF);
+    let mut manager = MultiplayerInputManager::<PlayerInput, HostInpugMgr>::new(
+        4,
+        max_ticks_behind,
+        MAX_TICKS_PREDICT_LOCF,
+    );
     let peer_2 = 2;
     let peer_3 = 3;
 
@@ -428,11 +448,11 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // rx 10 inputs for others
     manager.rx_guest_input_slice(
         peer_2.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 10)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 10)),
     );
     manager.rx_guest_input_slice(
         peer_3.into(),
-        MsgPayload::PeerInputs(PlayerInputSlice::new_test(0, 10)),
+        MsgPayload::PeerInputs(PlayerInputSlice::<PlayerInput>::new_test(0, 10)),
     );
 
     // have peer_2 ack inputs:
