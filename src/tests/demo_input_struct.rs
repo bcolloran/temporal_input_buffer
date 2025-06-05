@@ -15,6 +15,20 @@ pub struct PlayerInput {
     pub interact: bool,
 }
 
+impl PlayerInput {
+    pub fn new_test_simple(x: u8) -> Self {
+        Self {
+            angle: x as i8,
+            radius: x,
+            jump: x == 1 << 0,
+            dash: x == 1 << 1,
+            grab: x == 1 << 2,
+            shoot: x == 1 << 3,
+            interact: x == 1 << 4,
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Eq)]
 pub struct PlayerInputBinary {
     flags: u8,
