@@ -21,5 +21,8 @@ jobs:
         with:
           toolchain: nightly
 
-      - name: Test all crates
+      - name: Build
+        run: cargo build
+
+      - name: Test
         run: cargo test 
