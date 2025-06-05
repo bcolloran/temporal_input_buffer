@@ -5,7 +5,7 @@ use crate::{
     multiplayer_input_manager::MultiplayerInputManager,
     multiplayer_input_manager_host::{HOST_PLAYER_NUM, HostInpugMgr},
     peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
-    tests::demo_input_struct::{PlayerInput, PlayerInputBinary},
+    tests::demo_input_struct::PlayerInput,
     util_types::{PlayerInputSlice, PlayerNum},
 };
 

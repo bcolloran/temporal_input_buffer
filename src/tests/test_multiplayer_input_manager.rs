@@ -1,9 +1,9 @@
-use super::demo_input_struct::{PlayerInput, PlayerInputBinary};
+use super::demo_input_struct::PlayerInput;
 use crate::{
     input_messages::{HostFinalizedSlice, MsgPayload},
     multiplayer_input_manager::MultiplayerInputManager,
     multiplayer_input_manager_guest::{DEFAULT_MAX_CATCHUP_INPUTS, GuestInputMgr},
-    util_types::{PlayerInputSlice, PlayerNum},
+    util_types::PlayerNum,
 };
 
 #[test]
