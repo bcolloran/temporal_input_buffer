@@ -59,7 +59,7 @@ impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
     }
 
     /// For each player, returns the inputs for the given tick and whether the inputs have been finalized.
-    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(u8, T, bool)> {
+    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(PlayerNum, T, bool)> {
         self.buffers.get_inputs_and_finalization_status(tick)
     }
 

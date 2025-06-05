@@ -250,4 +250,8 @@ impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
             self.inner.host_tick = host_tick;
         }
     }
+
+    pub(crate) fn test_get_host_tick(&self) -> i32 {
+        self.inner.host_tick
+    }
 }
