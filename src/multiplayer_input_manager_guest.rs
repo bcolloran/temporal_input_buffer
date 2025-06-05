@@ -10,7 +10,7 @@ use super::{
     util_types::PlayerNum,
 };
 
-const DEFAULT_MAX_CATCHUP_INPUTS: u32 = 5;
+pub(crate) const DEFAULT_MAX_CATCHUP_INPUTS: u32 = 5;
 
 /// get the time since the program started in microseconds as a u64
 
@@ -243,12 +243,11 @@ impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
     }
 }
 
-//
-//
-//
-//
-//
-//
-// tests
-//
-//
+#[cfg(test)]
+impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
+    pub(crate) fn test_advance_host_tick(&mut self, host_tick: i32) {
+        if host_tick > self.inner.host_tick {
+            self.inner.host_tick = host_tick;
+        }
+    }
+}

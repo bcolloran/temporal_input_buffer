@@ -1,5 +1,6 @@
 use crate::{
     input_buffer::PlayerInputBuffer,
+    input_trait::SimInput,
     tests::demo_input_struct::{PlayerInput, PlayerInputBinary},
     util_types::PlayerInputSlice,
 };
@@ -38,11 +39,11 @@ fn test_get_input_or_prediction() {
     assert_eq!(buffer.get_input_or_prediction(10, 10), T::default());
     assert_eq!(buffer.get_input_or_prediction(0, 0), T::default());
 
-    buffer.append_input(T::new_test_simple(0));
-    buffer.append_input(T::new_test_simple(1));
-    buffer.append_input(T::new_test_simple(2));
-    buffer.append_input(T::new_test_simple(3));
-    buffer.append_input(T::new_test_simple(4));
+    buffer.append_input(T::new_test_simple(0).to_bytes());
+    buffer.append_input(T::new_test_simple(1).to_bytes());
+    buffer.append_input(T::new_test_simple(2).to_bytes());
+    buffer.append_input(T::new_test_simple(3).to_bytes());
+    buffer.append_input(T::new_test_simple(4).to_bytes());
 
     assert_eq!(buffer.get_input_or_prediction(0, 5), T::new_test_simple(0));
     assert_eq!(buffer.get_input_or_prediction(1, 5), T::new_test_simple(1));
@@ -125,7 +126,7 @@ fn test_rx_out_of_order_final_slices() {
     assert_eq!(buffer.num_inputs_collected(), 5);
     assert_eq!(buffer.finalized_inputs, 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::default());
+        assert_eq!(buffer.inputs[i], T::default().to_bytes());
     }
 }
 
@@ -137,7 +138,7 @@ fn test_host_finalize_default_thru_tick() {
     assert_eq!(buffer.num_inputs_collected(), 5);
     assert_eq!(buffer.finalized_inputs, 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::default());
+        assert_eq!(buffer.inputs[i], T::default().to_bytes());
     }
 }
 
@@ -146,7 +147,7 @@ fn test_host_finalize_default_thru_tick_wont_overwrite() {
     let mut buffer = PlayerInputBuffer::<T>::default();
     buffer.receive_finalized_input_slice(PlayerInputSlice::<T>::new_test(0, 5));
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8));
+        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8).to_bytes());
     }
 
     buffer.host_append_final_default_inputs_to_target(4);
@@ -155,6 +156,6 @@ fn test_host_finalize_default_thru_tick_wont_overwrite() {
     assert_eq!(buffer.num_inputs_collected(), 5);
     assert_eq!(buffer.finalized_inputs, 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8));
+        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8).to_bytes());
     }
 }

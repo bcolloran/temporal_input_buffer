@@ -52,11 +52,7 @@ impl PlayerInputBinary {
         }
     }
     pub fn new_test_simple(x: u8) -> PlayerInputBinary {
-        PlayerInputBinary {
-            flags: x,
-            angle: 0,
-            radius: 0,
-        }
+        PlayerInput::new_test_simple(x).to_bytes()
     }
 
     pub fn from_input(input: PlayerInput) -> PlayerInputBinary {
