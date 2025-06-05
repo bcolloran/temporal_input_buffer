@@ -169,10 +169,13 @@ fn test_get_inputs_and_finalization_status() {
     buffers.append_input(1.into(), PlayerInput::new_test_simple(12));
 
     let res = buffers.get_inputs_and_finalization_status(2);
-    assert_eq!(res, vec![
-        (0, PlayerInput::new_test_simple(2), true),
-        (1, PlayerInput::new_test_simple(12), false),
-    ]);
+    assert_eq!(
+        res,
+        vec![
+            (PlayerNum(0), PlayerInput::new_test_simple(2), true),
+            (PlayerNum(1), PlayerInput::new_test_simple(12), false),
+        ]
+    );
 }
 
 #[test]
@@ -189,7 +192,10 @@ fn test_get_input_statuses() {
 
     let statuses = buffers.get_input_statuses(2);
     assert_eq!(statuses.len(), 2);
-    assert!(matches!(statuses[0], (PlayerNum(0), InputStatus::Finalized)));
+    assert!(matches!(
+        statuses[0],
+        (PlayerNum(0), InputStatus::Finalized)
+    ));
     assert!(matches!(statuses[1], (PlayerNum(1), InputStatus::NonFinal)));
 
     let statuses_unreceived = buffers.get_input_statuses(3);
