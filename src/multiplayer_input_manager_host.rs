@@ -33,7 +33,7 @@ impl PongSendTimes {
     }
 }
 
-pub struct HostInpugMgr {
+pub struct HostInputMgr {
     /// tracks the number of finalized input ticks
     /// that each GUEST has acked for each other peer,
     /// including the host.
@@ -58,7 +58,7 @@ pub struct HostInpugMgr {
     disconnected_players: Vec<PlayerNum>,
 }
 
-impl HostInpugMgr {
+impl HostInputMgr {
     fn new(max_guest_ticks_behind: u32) -> Self {
         Self {
             guests_finalized_observations: HashMap::default(),
@@ -70,7 +70,7 @@ impl HostInpugMgr {
     }
 }
 
-impl<T: SimInput> MultiplayerInputManager<T, HostInpugMgr> {
+impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     // CONSTRUCTORS ///////////////////////////////////////////
     pub fn new(
         num_players: u8,
@@ -79,7 +79,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInpugMgr> {
     ) -> Self {
         Self {
             buffers: MultiplayerInputBuffers::new(num_players, max_ticks_to_predict_locf),
-            inner: HostInpugMgr::new(max_guest_ticks_behind),
+            inner: HostInputMgr::new(max_guest_ticks_behind),
             own_player_num: HOST_PLAYER_NUM,
         }
     }
@@ -95,7 +95,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInpugMgr> {
     /// Finalize a slice of inputs to the input buffer for
     /// the player with the given player_num.
     pub fn rx_guest_input_slice(&mut self, player_num: PlayerNum, msg: MsgPayload<T>) {
-        self.add_input_obervations_if_needed(player_num.into());
+        self.add_input_observations_if_needed(player_num.into());
         if let Ok(input_slice) = msg.try_into() {
             self.buffers
                 .receive_finalized_input_slice_for_player(input_slice, player_num);
@@ -106,7 +106,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInpugMgr> {
 
     /// The host input manager should add input observations for each guest
     /// as soon it becomes aware of them.
-    fn add_input_obervations_if_needed(&mut self, player_num: PlayerNum) {
+    fn add_input_observations_if_needed(&mut self, player_num: PlayerNum) {
         self.inner
             .guests_finalized_observations
             .entry(player_num)
