@@ -73,7 +73,7 @@ fn test_buffer_len_per_player() {
 #[test]
 fn test_receive_peer_input_slice() {
     let mut buffers = MultiplayerInputBuffers::<PlayerInput>::default();
-    let slice = PlayerInputSlice {
+    let slice = PlayerInputSlice::<PlayerInput> {
         start: 0,
         inputs: vec![
             PlayerInputBinary::new_test_simple(1),
@@ -102,7 +102,7 @@ fn test_host_append_default_inputs() {
 #[test]
 fn test_receive_finalized_input_slice() {
     let mut buffers = MultiplayerInputBuffers::<PlayerInput>::default();
-    let slice = PlayerInputSlice {
+    let slice = PlayerInputSlice::<PlayerInput> {
         start: 0,
         inputs: vec![
             PlayerInputBinary::new_test_simple(1),
