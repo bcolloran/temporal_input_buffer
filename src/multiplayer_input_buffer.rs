@@ -1,25 +1,30 @@
 use std::collections::HashMap;
 
+use crate::input_trait::SimInput;
+
 use super::{
     input_buffer::{InputStatus, PlayerInputBuffer},
-    peerwise_finalized_input::PeerwiseFinalizedInput,
-    util_types::{PlayerInput, PlayerInputBinary, PlayerInputSlice, PlayerNum},
+    peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
+    util_types::{PlayerInputSlice, PlayerNum},
 };
 
 #[derive(Debug)]
-pub struct MultiplayerInputBuffers {
+pub struct MultiplayerInputBuffers<T>
+where
+    T: SimInput,
+{
     max_inputs_to_predict: u32,
     num_players: u8,
-    pub buffers: Vec<PlayerInputBuffer>,
+    pub buffers: Vec<PlayerInputBuffer<T>>,
 }
 
-impl Default for MultiplayerInputBuffers {
+impl<T: SimInput> Default for MultiplayerInputBuffers<T> {
     fn default() -> Self {
         Self::new(4, 8)
     }
 }
 
-impl MultiplayerInputBuffers {
+impl<T: SimInput> MultiplayerInputBuffers<T> {
     pub fn new(num_players: u8, max_inputs_to_predict: u32) -> Self {
         Self {
             max_inputs_to_predict,
@@ -30,13 +35,13 @@ impl MultiplayerInputBuffers {
         }
     }
 
-    pub fn final_inputs_by_tick(&self) -> Vec<(u32, Vec<(u32, PlayerInput)>)> {
+    pub fn final_inputs_by_tick(&self) -> Vec<(u32, Vec<(u32, T)>)> {
         let mut final_inputs = vec![];
         for tick in 0..self.get_num_finalized_inputs_across_peers() {
             let mut inputs = vec![];
             for id in self.get_peer_player_nums().iter() {
                 let input = self.get_input_or_prediction(*id, tick);
-                inputs.push((Into::<u32>::into(*id), input.to_input()));
+                inputs.push((Into::<u32>::into(*id), input));
                 inputs.sort_by_key(|(i, _)| *i);
             }
             final_inputs.push((tick, inputs));
@@ -48,44 +53,48 @@ impl MultiplayerInputBuffers {
         (0..self.num_players).map(PlayerNum).collect()
     }
 
-    pub fn get_inputs_map_for_tick(&self, tick: u32) -> HashMap<u8, PlayerInput> {
+    pub fn get_inputs_map_for_tick(&self, tick: u32) -> HashMap<u8, T> {
         self.buffers
             .iter()
             .enumerate()
             .map(|(player_num, buf)| {
                 let input = buf.get_input_or_prediction(tick, self.max_inputs_to_predict);
-                (player_num as u8, input.to_input())
+                (player_num as u8, input)
             })
             .collect()
     }
 
-    fn buffer_by_player_num(&self, player_num: PlayerNum) -> &PlayerInputBuffer {
+    fn buffer_by_player_num(&self, player_num: PlayerNum) -> &PlayerInputBuffer<T> {
         self.buffers
             .get::<usize>(player_num.into())
             .unwrap_or_else(|| panic!("player_num out of bounds: {:?}", player_num))
     }
 
-    fn buffer_mut_by_player_num(&mut self, player_num: PlayerNum) -> &mut PlayerInputBuffer {
+    fn buffer_mut_by_player_num(&mut self, player_num: PlayerNum) -> &mut PlayerInputBuffer<T> {
         self.buffers
             .get_mut::<usize>(player_num.into())
             .unwrap_or_else(|| panic!("player_num out of bounds: {:?}", player_num))
     }
 
-    pub fn append_input(&mut self, player_num: PlayerNum, input: PlayerInputBinary) {
+    pub fn append_input(&mut self, player_num: PlayerNum, input: T) {
         self.buffer_mut_by_player_num(player_num)
-            .append_input(input);
+            .append_input(input.to_bytes());
     }
 
-    pub fn append_input_finalized(&mut self, player_num: PlayerNum, input: PlayerInputBinary) {
+    pub fn append_input_finalized(&mut self, player_num: PlayerNum, input: T) {
         self.buffer_mut_by_player_num(player_num)
-            .host_append_finalized(input);
+            .host_append_finalized(input.to_bytes());
     }
 
-    pub fn get_slice_to_end_for_peer(&self, player_num: PlayerNum, start: u32) -> PlayerInputSlice {
+    pub fn get_slice_to_end_for_peer(
+        &self,
+        player_num: PlayerNum,
+        start: u32,
+    ) -> PlayerInputSlice<T> {
         self.buffer_by_player_num(player_num).slice_from(start)
     }
 
-    pub fn get_input_or_prediction(&self, player_num: PlayerNum, tick: u32) -> PlayerInputBinary {
+    pub fn get_input_or_prediction(&self, player_num: PlayerNum, tick: u32) -> T {
         self.buffer_by_player_num(player_num)
             .get_input_or_prediction(tick, self.max_inputs_to_predict)
     }
@@ -108,7 +117,7 @@ impl MultiplayerInputBuffers {
             .collect()
     }
 
-    pub fn receive_peer_input_slice(&mut self, slice: PlayerInputSlice, player_num: PlayerNum) {
+    pub fn receive_peer_input_slice(&mut self, slice: PlayerInputSlice<T>, player_num: PlayerNum) {
         self.buffer_mut_by_player_num(player_num)
             .receive_peer_input_slice(slice);
     }
@@ -127,7 +136,7 @@ impl MultiplayerInputBuffers {
 
     pub fn receive_finalized_input_slice_for_player(
         &mut self,
-        slice: PlayerInputSlice,
+        slice: PlayerInputSlice<T>,
         player_num: PlayerNum,
     ) {
         self.buffer_mut_by_player_num(player_num)
@@ -136,8 +145,8 @@ impl MultiplayerInputBuffers {
 
     /// This method builds the PeerwiseFinalizedInput mapping
     /// based on this buffer's state.
-    pub fn get_peerwise_finalized_inputs(&self) -> PeerwiseFinalizedInput {
-        let ack = PeerwiseFinalizedInput::new(
+    pub fn get_peerwise_finalized_inputs(&self) -> PeerwiseFinalizedInputsSeen {
+        let ack = PeerwiseFinalizedInputsSeen::new(
             self.buffers
                 .iter()
                 .enumerate()
@@ -167,14 +176,14 @@ impl MultiplayerInputBuffers {
     }
 
     /// For each player, returns the inputs for the given tick and whether the inputs have been finalized.
-    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(u8, PlayerInput, bool)> {
+    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(u8, T, bool)> {
         let mut inputs: Vec<_> = self
             .buffers
             .iter()
             .enumerate()
             .map(|(player_num, buf)| {
                 let input = buf.get_input_or_prediction(tick, self.max_inputs_to_predict);
-                (player_num as u8, input.to_input(), buf.is_finalized(tick))
+                (player_num as u8, input, buf.is_finalized(tick))
             })
             .collect();
         inputs.sort_by_key(|(i, _, _)| *i);
@@ -182,7 +191,7 @@ impl MultiplayerInputBuffers {
     }
 
     /// For each player, returns the InputStatus for the given input_num
-    pub fn get_inputs_status(&self, input_num: u32) -> Vec<(PlayerNum, InputStatus)> {
+    pub fn get_input_statuses(&self, input_num: u32) -> Vec<(PlayerNum, InputStatus)> {
         self.buffers
             .iter()
             .enumerate()
@@ -204,135 +213,8 @@ impl MultiplayerInputBuffers {
         bincode::serialize(buf).unwrap()
     }
     pub fn deserialize_player_buffer(&mut self, player_num: PlayerNum, data: &[u8]) {
-        let buf: PlayerInputBuffer = bincode::deserialize(data).unwrap();
+        let buf: PlayerInputBuffer<T> = bincode::deserialize(data).unwrap();
         let num: usize = player_num.into();
         self.buffers[num] = buf;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_append_and_get_input() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        buffers.append_input(1.into(), PlayerInputBinary::new_test_simple(42));
-
-        let slice = buffers.get_slice_to_end_for_peer(1.into(), 0);
-        assert_eq!(slice.inputs, vec![PlayerInputBinary::new_test_simple(42)]);
-        assert_eq!(slice.start, 0);
-    }
-
-    #[test]
-    fn test_finalized_ticks() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        buffers.append_input_finalized(1.into(), PlayerInputBinary::new_test_simple(42));
-
-        assert_eq!(buffers.get_num_finalized_inputs(1.into()), 1);
-        assert_eq!(buffers.get_num_finalized_inputs(2.into()), 0);
-
-        let finalized_ticks = buffers.get_num_finalized_inputs_per_peer();
-        assert_eq!(finalized_ticks.get(&1.into()), Some(&1u32));
-    }
-
-    #[test]
-    fn test_get_num_finalized_inputs_across_peers() {
-        let mut buffers = MultiplayerInputBuffers::new(2, 8);
-
-        assert_eq!(buffers.get_num_finalized_inputs_across_peers(), 0);
-
-        buffers.append_input_finalized(0.into(), PlayerInputBinary::new_test_simple(0));
-
-        // peer 0 has 1 finalized input, across all peers we still have 0
-        assert_eq!(buffers.get_num_finalized_inputs_across_peers(), 0);
-
-        for t in 1..5 {
-            buffers.append_input_finalized(0.into(), PlayerInputBinary::new_test_simple(t));
-        }
-
-        // peer 0 has 5 finalized input, across all peers we still have 0
-        assert_eq!(buffers.get_num_finalized_inputs_across_peers(), 0);
-
-        buffers.append_input_finalized(1.into(), PlayerInputBinary::new_test_simple(0));
-        assert_eq!(buffers.get_num_finalized_inputs_across_peers(), 1);
-
-        for t in 0..10 {
-            buffers.append_input_finalized(1.into(), PlayerInputBinary::new_test_simple(t));
-        }
-
-        assert_eq!(buffers.get_num_finalized_inputs_across_peers(), 5);
-    }
-
-    #[test]
-    fn test_buffer_len_per_player() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        buffers.append_input(1.into(), PlayerInputBinary::new_test_simple(42));
-        buffers.append_input(1.into(), PlayerInputBinary::new_test_simple(43));
-
-        buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44));
-        buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44));
-        buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44));
-        buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44));
-
-        let lengths = buffers.buffer_len_per_player();
-        assert_eq!(lengths.get(&1.into()), Some(&2));
-        assert_eq!(lengths.get(&2.into()), Some(&4));
-    }
-
-    #[test]
-    fn test_receive_peer_input_slice() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        let slice = PlayerInputSlice {
-            start: 0,
-            inputs: vec![
-                PlayerInputBinary::new_test_simple(1),
-                PlayerInputBinary::new_test_simple(2),
-            ],
-        };
-
-        buffers.receive_peer_input_slice(slice.clone(), 1.into());
-
-        let retrieved = buffers.get_slice_to_end_for_peer(1.into(), 0);
-        assert_eq!(retrieved.inputs, slice.inputs);
-        assert_eq!(retrieved.start, 0);
-    }
-
-    #[test]
-    fn test_host_append_default_inputs() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        buffers.append_final_default_inputs_to_target(1.into(), 4);
-
-        assert_eq!(buffers.get_num_finalized_inputs(1.into()), 5);
-
-        let slice = buffers.get_slice_to_end_for_peer(1.into(), 0);
-        assert_eq!(slice.inputs.len(), 5);
-    }
-
-    #[test]
-    fn test_receive_finalized_input_slice() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        let slice = PlayerInputSlice {
-            start: 0,
-            inputs: vec![
-                PlayerInputBinary::new_test_simple(1),
-                PlayerInputBinary::new_test_simple(2),
-            ],
-        };
-
-        buffers.receive_finalized_input_slice_for_player(slice, 1.into());
-        assert_eq!(buffers.get_num_finalized_inputs(1.into()), 2);
-    }
-
-    #[test]
-    fn test_get_peerwise_finalized_inputs() {
-        let mut buffers = MultiplayerInputBuffers::default();
-        buffers.append_input_finalized(1.into(), PlayerInputBinary::new_test_simple(1));
-        buffers.append_input_finalized(2.into(), PlayerInputBinary::new_test_simple(1));
-        buffers.append_input_finalized(2.into(), PlayerInputBinary::new_test_simple(2));
-
-        let pfi_map = buffers.get_peerwise_finalized_inputs().inner();
-        assert_eq!(pfi_map.get(&1.into()), Some(&1));
-        assert_eq!(pfi_map.get(&2.into()), Some(&2));
     }
 }

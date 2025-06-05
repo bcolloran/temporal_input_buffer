@@ -1,14 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{
-    input::util_types::PlayerInput,
-    game_sim::sim_state::debug::sim_rollout_stats::TickSimulationStatus,
-};
+use crate::{input_buffer::InputStatus, input_trait::SimInput};
 
-use super::{
-    multiplayer_input_buffer::MultiplayerInputBuffers,
-    util_types::{PlayerInputBinary, PlayerNum},
-};
+use super::{multiplayer_input_buffer::MultiplayerInputBuffers, util_types::PlayerNum};
 
 /// A node that manages input buffers.
 /// This is also the source of truth regarding timing for the client.
@@ -34,18 +28,21 @@ use super::{
 ///
 /// Type `T` is the inner type that this manager wraps, for either
 /// the host or the guest.
-pub struct MultiplayerInputManager<T> {
-    pub(super) buffers: MultiplayerInputBuffers,
+pub struct MultiplayerInputManager<T, Buf>
+where
+    T: SimInput,
+{
+    pub(super) buffers: MultiplayerInputBuffers<T>,
     pub(super) own_player_num: PlayerNum,
-    pub(super) inner: T,
+    pub(super) inner: Buf,
 }
 
-impl<T> MultiplayerInputManager<T> {
+impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
     pub fn get_own_id(&self) -> u32 {
         self.own_player_num.into()
     }
 
-    pub fn get_final_inputs_by_tick(&self) -> Vec<(u32, Vec<(u32, PlayerInput)>)> {
+    pub fn get_final_inputs_by_tick(&self) -> Vec<(u32, Vec<(u32, T)>)> {
         self.buffers.final_inputs_by_tick()
     }
 
@@ -62,15 +59,15 @@ impl<T> MultiplayerInputManager<T> {
     }
 
     /// For each player, returns the inputs for the given tick and whether the inputs have been finalized.
-    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(u8, PlayerInput, bool)> {
+    pub fn get_inputs_and_finalization_status(&self, tick: u32) -> Vec<(u8, T, bool)> {
         self.buffers.get_inputs_and_finalization_status(tick)
     }
 
-    pub fn get_inputs_map_for_tick(&self, tick: u32) -> HashMap<u8, PlayerInput> {
+    pub fn get_inputs_map_for_tick(&self, tick: u32) -> HashMap<u8, T> {
         self.buffers.get_inputs_map_for_tick(tick)
     }
 
-    pub fn get_peer_input_for_tick(&self, player_num: PlayerNum, tick: u32) -> PlayerInputBinary {
+    pub fn get_peer_input_for_tick(&self, player_num: PlayerNum, tick: u32) -> T {
         self.buffers
             .get_input_or_prediction(player_num.into(), tick)
     }
@@ -104,8 +101,8 @@ impl<T> MultiplayerInputManager<T> {
         self.buffers.get_num_finalized_inputs_across_peers()
     }
 
-    pub fn get_input_tick_completion(&self, input_num: u32) -> TickSimulationStatus {
-        TickSimulationStatus::from_input_status_vec(self.buffers.get_inputs_status(input_num))
+    pub fn get_input_statuses(&self, input_num: u32) -> Vec<(PlayerNum, InputStatus)> {
+        self.buffers.get_input_statuses(input_num)
     }
 
     pub fn serialize_player_buffer(

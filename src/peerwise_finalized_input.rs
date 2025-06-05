@@ -9,9 +9,9 @@ use super::util_types::PlayerNum;
 /// sent this ack has seen* ie., that they have in their
 /// own local MultiplayerInputBuffer.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct PeerwiseFinalizedInput(HashMap<PlayerNum, u32>);
+pub struct PeerwiseFinalizedInputsSeen(HashMap<PlayerNum, u32>);
 
-impl PeerwiseFinalizedInput {
+impl PeerwiseFinalizedInputsSeen {
     pub fn new(map: HashMap<PlayerNum, u32>) -> Self {
         Self(map)
     }
@@ -25,7 +25,7 @@ impl PeerwiseFinalizedInput {
 
     /// Update the ack with the ticks from another ack
     /// if the other ack has a newer tick for the same player_num.
-    pub fn update(&mut self, other: PeerwiseFinalizedInput) {
+    pub fn update(&mut self, other: PeerwiseFinalizedInputsSeen) {
         for (player_num, tick) in other.0.iter() {
             if let Some(existing_tick) = self.0.get(player_num) {
                 if tick > existing_tick {
@@ -39,7 +39,10 @@ impl PeerwiseFinalizedInput {
 
     /// Returns a new FinalizedTicksAck where each entry is the oldest of the two
     /// ticks for the same player_num
-    pub fn pairwise_oldest(&self, other: &PeerwiseFinalizedInput) -> PeerwiseFinalizedInput {
+    pub fn pairwise_oldest(
+        &self,
+        other: &PeerwiseFinalizedInputsSeen,
+    ) -> PeerwiseFinalizedInputsSeen {
         let mut ack = self.clone();
 
         for (player_num, tick) in other.0.iter() {
@@ -63,7 +66,7 @@ impl PeerwiseFinalizedInput {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::input::{peerwise_finalized_input::PeerwiseFinalizedInput, util_types::PlayerNum};
+    use crate::{peerwise_finalized_input::PeerwiseFinalizedInputsSeen, util_types::PlayerNum};
 
     #[test]
     fn test_basic_operations() {
@@ -71,7 +74,7 @@ mod tests {
         map.insert(PlayerNum(1), 10);
         map.insert(PlayerNum(2), 20);
 
-        let ack = PeerwiseFinalizedInput::new(map);
+        let ack = PeerwiseFinalizedInputsSeen::new(map);
         assert_eq!(ack.get(1.into()), 10);
         assert_eq!(ack.get(2.into()), 20);
         assert_eq!(ack.get(3.into()), 0);
@@ -79,8 +82,9 @@ mod tests {
 
     #[test]
     fn test_update() {
-        let mut ack1 = PeerwiseFinalizedInput::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
-        let ack2 = PeerwiseFinalizedInput::new(HashMap::from([
+        let mut ack1 =
+            PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
+        let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 15),
             (2.into(), 15),
             (3.into(), 25),
@@ -94,8 +98,9 @@ mod tests {
 
     #[test]
     fn test_pairwise_oldest() {
-        let ack1 = PeerwiseFinalizedInput::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
-        let ack2 = PeerwiseFinalizedInput::new(HashMap::from([
+        let ack1 =
+            PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
+        let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 15),
             (2.into(), 15),
             (3.into(), 25),

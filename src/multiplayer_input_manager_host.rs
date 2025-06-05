@@ -1,11 +1,12 @@
-use crate::{etc::ewma::Ewma, input::util_types::PlayerInput, log::logging_core::DEBUG};
 use std::collections::HashMap;
 
+use crate::{ewma::Ewma, input_trait::SimInput};
+
 use super::{
-    godot_input_messages::{HostFinalizedSlice, MsgPayload},
+    input_messages::{HostFinalizedSlice, MsgPayload},
     multiplayer_input_buffer::MultiplayerInputBuffers,
     multiplayer_input_manager::MultiplayerInputManager,
-    peerwise_finalized_input::PeerwiseFinalizedInput,
+    peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
     util_types::PlayerNum,
 };
 
@@ -41,7 +42,7 @@ pub struct HostInpugMgr {
     /// Keys: player_num of GUEST
     /// Values: the PeerwiseFinalizedInput of for each other peer,
     /// as seen by this GUEST.
-    pub(super) guests_finalized_observations: HashMap<PlayerNum, PeerwiseFinalizedInput>,
+    pub(super) guests_finalized_observations: HashMap<PlayerNum, PeerwiseFinalizedInputsSeen>,
 
     /// CONFIG SETTING
     /// The maximum number of ticks that a guest can be behind the host
@@ -69,7 +70,7 @@ impl HostInpugMgr {
     }
 }
 
-impl MultiplayerInputManager<HostInpugMgr> {
+impl<T: SimInput> MultiplayerInputManager<T, HostInpugMgr> {
     // CONSTRUCTORS ///////////////////////////////////////////
     pub fn new(
         num_players: u8,
@@ -84,7 +85,7 @@ impl MultiplayerInputManager<HostInpugMgr> {
     }
 
     /// Add a finalized input to the hosts own input buffer
-    pub fn add_own_input(&mut self, input: PlayerInput) {
+    pub fn add_own_input(&mut self, input: T) {
         self.buffers
             .append_input_finalized(HOST_PLAYER_NUM, input.into());
     }
@@ -93,7 +94,7 @@ impl MultiplayerInputManager<HostInpugMgr> {
 
     /// Finalize a slice of inputs to the input buffer for
     /// the player with the given player_num.
-    pub fn rx_guest_input_slice(&mut self, player_num: PlayerNum, msg: MsgPayload) {
+    pub fn rx_guest_input_slice(&mut self, player_num: PlayerNum, msg: MsgPayload<T>) {
         self.add_input_obervations_if_needed(player_num.into());
         if let Ok(input_slice) = msg.try_into() {
             self.buffers
@@ -109,15 +110,15 @@ impl MultiplayerInputManager<HostInpugMgr> {
         self.inner
             .guests_finalized_observations
             .entry(player_num)
-            .or_insert_with(PeerwiseFinalizedInput::default);
+            .or_insert_with(PeerwiseFinalizedInputsSeen::default);
     }
 
-    pub fn rx_finalized_ticks_observations(&mut self, player_num: PlayerNum, msg: MsgPayload) {
+    pub fn rx_finalized_ticks_observations(&mut self, player_num: PlayerNum, msg: MsgPayload<T>) {
         if let Ok(new_ack) = msg.try_into() {
             self.inner
                 .guests_finalized_observations
                 .entry(player_num)
-                .or_insert_with(PeerwiseFinalizedInput::default)
+                .or_insert_with(PeerwiseFinalizedInputsSeen::default)
                 .update(new_ack);
         }
     }
@@ -127,8 +128,8 @@ impl MultiplayerInputManager<HostInpugMgr> {
     pub fn rx_guest_ping_and_reply(
         &mut self,
         player_num: PlayerNum,
-        msg: MsgPayload,
-    ) -> MsgPayload {
+        msg: MsgPayload<T>,
+    ) -> MsgPayload<T> {
         if let MsgPayload::GuestPing(id) = msg {
             self.inner
                 .pong_send_times
@@ -142,7 +143,11 @@ impl MultiplayerInputManager<HostInpugMgr> {
         }
     }
 
-    pub fn rx_guest_pong_pong(&mut self, player_num: PlayerNum, msg: MsgPayload) -> MsgPayload {
+    pub fn rx_guest_pong_pong(
+        &mut self,
+        player_num: PlayerNum,
+        msg: MsgPayload<T>,
+    ) -> Result<MsgPayload<T>, String> {
         if let MsgPayload::GuestPongPong(id) = msg {
             let rtt = self
                 .inner
@@ -152,11 +157,10 @@ impl MultiplayerInputManager<HostInpugMgr> {
                 .observe_pong_reply(id);
 
             if rtt.is_err() {
-                log::error!(target: DEBUG,
+                return Err(format!(
                     "rx_guest_pong_pong msg id not found for player {:?}; msg payload: {:?}",
-                    player_num,
-                    msg
-                );
+                    player_num, msg
+                ));
             }
 
             self.inner
@@ -165,9 +169,9 @@ impl MultiplayerInputManager<HostInpugMgr> {
                 .or_insert(Ewma::default())
                 .observe(rtt.unwrap());
 
-            MsgPayload::Empty
+            Ok(MsgPayload::Empty)
         } else {
-            panic!("fn rx_guest_pong can only handle GuestPong message")
+            Err("fn rx_guest_pong can only handle GuestPong message".into())
         }
     }
 
@@ -175,7 +179,7 @@ impl MultiplayerInputManager<HostInpugMgr> {
 
     /// Gets the finalized input slice for this peer
     /// needed by guests
-    pub fn get_msg_finalized_slice(&self, player_num: PlayerNum) -> MsgPayload {
+    pub fn get_msg_finalized_slice(&self, player_num: PlayerNum) -> MsgPayload<T> {
         // get the earliest tick that has been finalized across all peers
         let start = self.get_earliest_num_observed_final_for_peer(player_num.into());
 
@@ -201,7 +205,10 @@ impl MultiplayerInputManager<HostInpugMgr> {
     /// Also, if the player is disconnected, the host will add finalized inputs up to the hosts own input and send those.
     ///
     /// If not, this function returns an empty message.
-    pub fn get_msg_finalized_late_inputs_for_guest(&mut self, player_num: PlayerNum) -> MsgPayload {
+    pub fn get_msg_finalized_late_inputs_for_guest(
+        &mut self,
+        player_num: PlayerNum,
+    ) -> MsgPayload<T> {
         let target_num_final_inputs = if self.inner.disconnected_players.contains(&player_num) {
             self.get_own_num_inputs()
         } else {

@@ -1,7 +1,6 @@
-use easy_hash::EasyHash;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Hash, EasyHash, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ButtonState {
     // how many ticks the button has been pressed
     Pressed(u32),

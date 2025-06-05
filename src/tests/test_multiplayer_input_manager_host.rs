@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::input::{
-    godot_input_messages::{HostFinalizedSlice, MsgPayload},
+use crate::{
+    input_messages::{HostFinalizedSlice, MsgPayload},
     multiplayer_input_manager::MultiplayerInputManager,
-    multiplayer_input_manager_host::{HostInpugMgr, HOST_PLAYER_NUM},
-    peerwise_finalized_input::PeerwiseFinalizedInput,
-    util_types::{PlayerInput, PlayerInputSlice, PlayerNum},
+    multiplayer_input_manager_host::{HOST_PLAYER_NUM, HostInpugMgr},
+    peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
+    util_types::{PlayerInputSlice, PlayerNum},
 };
 
 const MAX_TICKS_PREDICT_LOCF: u32 = 5;
@@ -73,7 +73,7 @@ fn test_get_finalization_start_for_peer() {
 
     // now have the peer ack inputs up to tick 3 for host,
     // and up to tick 5 for themselves
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 3),
         (other_id.into(), 5),
     ])));
@@ -117,7 +117,7 @@ fn test_get_finalization_start_for_peer_2() {
     // now have peer_2 ack inputs up to tick 3 for host,
     // and up to tick 5 for themselves
     // and up to tick 7 for peer 3
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 3),
         (peer_2.into(), 5),
         (peer_3.into(), 7),
@@ -132,7 +132,7 @@ fn test_get_finalization_start_for_peer_2() {
     );
 
     // now have peer_3 ack inputs up to tick 9 across all peers
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 9),
         (peer_2.into(), 9),
         (peer_3.into(), 9),
@@ -153,7 +153,7 @@ fn test_get_finalization_start_for_peer_2() {
     );
 
     // now have peer_2 ack inputs up to tick 15 across all peers
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 15),
         (peer_2.into(), 15),
         (peer_3.into(), 15),
@@ -245,7 +245,7 @@ fn test_get_msg_catch_up_with_guest_acks() {
 
     // add ack for peer only up to tick 3;
     // the host should send inputs up to catch up as far as 5
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 3),
         (peer_id.into(), 3),
     ])));
@@ -274,7 +274,7 @@ fn test_get_msg_catch_up_with_guest_acks() {
         manager.add_own_input(PlayerInput::default());
     }
     // ack for peer up to tick 15
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
         (HOST_PLAYER_NUM, 15),
         (peer_id.into(), 15),
     ])));
@@ -374,7 +374,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     // up to 1 for peer_3
     manager.rx_finalized_ticks_observations(
         peer_2.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 3),
             (peer_2.into(), 5),
             (peer_3.into(), 1),
@@ -441,7 +441,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // up to 1 for peer_3
     manager.rx_finalized_ticks_observations(
         peer_2.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 3),
             (peer_2.into(), 5),
             (peer_3.into(), 1),
@@ -454,7 +454,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // up to 7 for peer_2
     manager.rx_finalized_ticks_observations(
         peer_3.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInput::new(HashMap::from([
+        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 7),
             (peer_2.into(), 7),
             (peer_3.into(), 7),
