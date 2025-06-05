@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
-pub trait SimInput: Default + Clone + Debug {
+use serde::Serialize;
+
+pub trait SimInput: Default + Clone + Debug + Serialize {
     /// reduced representation of the input for storage and transmission
     type Bytes: Sized
         + Copy

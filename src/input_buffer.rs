@@ -109,7 +109,7 @@ where
     }
 
     pub fn get_input_status(&self, input_num: u32) -> InputStatus {
-        if input_num <= self.finalized_inputs {
+        if input_num < self.finalized_inputs {
             InputStatus::Finalized
         } else if input_num < self.inputs.len() as u32 {
             InputStatus::NonFinal

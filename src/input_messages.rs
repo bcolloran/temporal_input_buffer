@@ -42,7 +42,7 @@ impl Default for PreSimSync {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone)]
 pub enum MsgPayload<T: SimInput> {
     #[default]
     Empty,
@@ -64,6 +64,78 @@ pub enum MsgPayload<T: SimInput> {
     GuestPing(u32),
     HostPong(u32),
     GuestPongPong(u32),
+}
+
+impl<T> MsgPayload<T>
+where
+    T: SimInput,
+{
+    fn variant_num(&self) -> u8 {
+        match self {
+            MsgPayload::Empty => 0,
+            MsgPayload::Invalid => 1,
+            MsgPayload::AckFinalization(_) => 2,
+            MsgPayload::HostFinalizedSlice(_) => 3,
+            MsgPayload::PeerInputs(_) => 4,
+            MsgPayload::PreSimSync(_) => 5,
+            MsgPayload::GuestPing(_) => 6,
+            MsgPayload::HostPong(_) => 7,
+            MsgPayload::GuestPongPong(_) => 8,
+        }
+    }
+}
+
+impl<T: SimInput> MsgPayload<T> {
+    /// The first byte of the serialized message is the variant number,
+    /// (which can be used to determine the type of message without deserializing).
+    /// The rest of the bytes are the (bincode) serialized data, if any.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![self.variant_num()];
+        let extension_bytes = match self {
+            MsgPayload::Empty => vec![],
+            MsgPayload::Invalid => vec![],
+            MsgPayload::AckFinalization(ack) => bincode::serialize(ack).unwrap(),
+            MsgPayload::HostFinalizedSlice(slice) => bincode::serialize(slice).unwrap(),
+            MsgPayload::PeerInputs(slice) => bincode::serialize(slice).unwrap(),
+            MsgPayload::PreSimSync(sync) => bincode::serialize(sync).unwrap(),
+            MsgPayload::GuestPing(ping_id) => bincode::serialize(ping_id).unwrap(),
+            MsgPayload::HostPong(ping_id) => bincode::serialize(ping_id).unwrap(),
+            MsgPayload::GuestPongPong(ping_id) => bincode::serialize(ping_id).unwrap(),
+        };
+        bytes.extend(extension_bytes);
+        bytes
+    }
+
+    /// Deserialize a `MsgPayload` from bytes.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, bincode::Error>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        if bytes.is_empty() {
+            return Ok(MsgPayload::Empty);
+        }
+        let variant_num = bytes[0];
+        let payload_bytes = &bytes[1..];
+
+        match variant_num {
+            0 => Ok(MsgPayload::Empty),
+            1 => Ok(MsgPayload::Invalid),
+            2 => Ok(MsgPayload::AckFinalization(bincode::deserialize(
+                payload_bytes,
+            )?)),
+            3 => Ok(MsgPayload::HostFinalizedSlice(bincode::deserialize(
+                payload_bytes,
+            )?)),
+            4 => Ok(MsgPayload::PeerInputs(bincode::deserialize(payload_bytes)?)),
+            5 => Ok(MsgPayload::PreSimSync(bincode::deserialize(payload_bytes)?)),
+            6 => Ok(MsgPayload::GuestPing(bincode::deserialize(payload_bytes)?)),
+            7 => Ok(MsgPayload::HostPong(bincode::deserialize(payload_bytes)?)),
+            8 => Ok(MsgPayload::GuestPongPong(bincode::deserialize(
+                payload_bytes,
+            )?)),
+            _ => Err(bincode::ErrorKind::Custom("Unknown MsgPayload variant".into()).into()),
+        }
+    }
 }
 
 impl<T: SimInput> Into<MsgPayload<T>> for HostFinalizedSlice<T> {

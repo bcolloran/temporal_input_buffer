@@ -1,7 +1,7 @@
 use crate::{
     multiplayer_input_buffer::MultiplayerInputBuffers,
     tests::demo_input_struct::{PlayerInput, PlayerInputBinary},
-    util_types::PlayerInputSlice,
+    util_types::{PlayerInputSlice, PlayerNum},
 };
 
 #[test]
@@ -124,4 +124,76 @@ fn test_get_peerwise_finalized_inputs() {
     let pfi_map = buffers.get_peerwise_finalized_inputs().inner();
     assert_eq!(pfi_map.get(&1.into()), Some(&1));
     assert_eq!(pfi_map.get(&2.into()), Some(&2));
+}
+#[test]
+fn test_final_inputs_by_tick_ordered() {
+    let mut buffers = MultiplayerInputBuffers::<PlayerInput>::new(2, 8);
+    for t in 0..3u8 {
+        buffers.append_input_finalized(0.into(), PlayerInput::new_test_simple(t));
+        buffers.append_input_finalized(1.into(), PlayerInput::new_test_simple(t + 10));
+    }
+
+    let result = buffers.final_inputs_by_tick();
+    assert_eq!(result.len(), 3);
+    for (idx, (tick, inputs)) in result.iter().enumerate() {
+        assert_eq!(*tick, idx as u32);
+        assert_eq!(inputs.len(), 2);
+        assert_eq!(inputs[0], (0, PlayerInput::new_test_simple(idx as u8)));
+        assert_eq!(inputs[1], (1, PlayerInput::new_test_simple(idx as u8 + 10)));
+    }
+}
+
+#[test]
+fn test_get_inputs_map_for_tick() {
+    let mut buffers = MultiplayerInputBuffers::<PlayerInput>::new(2, 8);
+    for t in 0..3u8 {
+        buffers.append_input_finalized(0.into(), PlayerInput::new_test_simple(t));
+        buffers.append_input_finalized(1.into(), PlayerInput::new_test_simple(t + 10));
+    }
+
+    let map = buffers.get_inputs_map_for_tick(1);
+    assert_eq!(map.get(&0), Some(&PlayerInput::new_test_simple(1)));
+    assert_eq!(map.get(&1), Some(&PlayerInput::new_test_simple(11)));
+    assert_eq!(map.len(), 2);
+}
+
+#[test]
+fn test_get_inputs_and_finalization_status() {
+    let mut buffers = MultiplayerInputBuffers::<PlayerInput>::new(2, 8);
+    for t in 0..3u8 {
+        buffers.append_input_finalized(0.into(), PlayerInput::new_test_simple(t));
+    }
+    for t in 0..2u8 {
+        buffers.append_input_finalized(1.into(), PlayerInput::new_test_simple(t + 10));
+    }
+    buffers.append_input(1.into(), PlayerInput::new_test_simple(12));
+
+    let res = buffers.get_inputs_and_finalization_status(2);
+    assert_eq!(res, vec![
+        (0, PlayerInput::new_test_simple(2), true),
+        (1, PlayerInput::new_test_simple(12), false),
+    ]);
+}
+
+#[test]
+fn test_get_input_statuses() {
+    use crate::input_buffer::InputStatus;
+    let mut buffers = MultiplayerInputBuffers::<PlayerInput>::new(2, 8);
+    for t in 0..3u8 {
+        buffers.append_input_finalized(0.into(), PlayerInput::new_test_simple(t));
+    }
+    for t in 0..2u8 {
+        buffers.append_input_finalized(1.into(), PlayerInput::new_test_simple(t + 10));
+    }
+    buffers.append_input(1.into(), PlayerInput::new_test_simple(12));
+
+    let statuses = buffers.get_input_statuses(2);
+    assert_eq!(statuses.len(), 2);
+    assert!(matches!(statuses[0], (PlayerNum(0), InputStatus::Finalized)));
+    assert!(matches!(statuses[1], (PlayerNum(1), InputStatus::NonFinal)));
+
+    let statuses_unreceived = buffers.get_input_statuses(3);
+    for (_, status) in statuses_unreceived {
+        assert!(matches!(status, InputStatus::NotReceived));
+    }
 }
