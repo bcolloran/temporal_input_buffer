@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::input_trait::{SimInput, TestInputBytes};
 
-#[derive(Default, Clone, Copy, PartialEq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PlayerInput {
     /// Angle in 256ths of a circle
     angle: i8,

@@ -1,6 +1,5 @@
 #![feature(duration_millis_float)]
 
-pub mod button_state;
 pub mod ewma;
 pub mod input_buffer;
 pub mod input_messages;
