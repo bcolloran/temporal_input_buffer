@@ -57,7 +57,7 @@ impl PeerwiseFinalizedInputsSeen {
         ack
     }
 
-    pub fn ealiest_input_finalized_by_all(&self) -> u32 {
+    pub fn earliest_input_finalized_by_all(&self) -> u32 {
         self.0.values().copied().min().unwrap_or(0)
     }
 }

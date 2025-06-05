@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 
 /// The status of the inputs for a given tick.
 pub enum InputStatus {
-    /// Recieved from a peer and finalized by the host.
+    /// Received from a peer and finalized by the host.
     Finalized,
-    /// Recieved from a peer, but not yet finalized.
+    /// Received from a peer, but not yet finalized.
     NonFinal,
-    /// Not yet recieved from a peer.
-    NotRecieved,
+    /// Not yet received from a peer.
+    NotReceived,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -114,7 +114,7 @@ where
         } else if input_num < self.inputs.len() as u32 {
             InputStatus::NonFinal
         } else {
-            InputStatus::NotRecieved
+            InputStatus::NotReceived
         }
     }
 
