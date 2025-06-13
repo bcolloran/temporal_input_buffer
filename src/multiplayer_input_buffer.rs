@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::input_trait::SimInput;
+use crate::{
+    input_messages::{from_bincode_bytes, to_bincode_bytes},
+    input_trait::SimInput,
+};
 
 use super::{
     input_buffer::{InputStatus, PlayerInputBuffer},
@@ -208,12 +211,12 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
         if reset_finalization {
             let mut buf = buf.clone();
             buf.finalized_inputs = 0;
-            return bincode::serialize(&buf).unwrap();
+            return to_bincode_bytes(&buf);
         }
-        bincode::serialize(buf).unwrap()
+        to_bincode_bytes(buf)
     }
     pub fn deserialize_player_buffer(&mut self, player_num: PlayerNum, data: &[u8]) {
-        let buf: PlayerInputBuffer<T> = bincode::deserialize(data).unwrap();
+        let buf = from_bincode_bytes::<PlayerInputBuffer<T>>(data).unwrap();
         let num: usize = player_num.into();
         self.buffers[num] = buf;
     }
