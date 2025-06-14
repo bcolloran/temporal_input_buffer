@@ -1,4 +1,6 @@
-use crate::{input_trait::SimInput, util_types::PlayerInputSlice};
+use crate::{
+    input_messages::from_bincode_bytes, input_trait::SimInput, util_types::PlayerInputSlice,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +28,14 @@ impl<T> PlayerInputBuffer<T>
 where
     T: SimInput,
 {
+    pub fn from_bincode_bytes(bytes: &[u8]) -> Self {
+        let decoded = from_bincode_bytes::<Self>(bytes);
+        match decoded {
+            Ok(buffer) => buffer,
+            Err(e) => panic!("Failed to decode PlayerInputBuffer: {}", e),
+        }
+    }
+
     pub fn is_finalized(&self, tick: u32) -> bool {
         tick < self.finalized_inputs
     }

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     input_messages::{from_bincode_bytes, to_bincode_bytes},
     input_trait::SimInput,
@@ -11,7 +13,7 @@ use super::{
     util_types::{PlayerInputSlice, PlayerNum},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultiplayerInputBuffers<T>
 where
     T: SimInput,
@@ -202,6 +204,8 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
             .collect()
     }
 
+    /// Serializes the `PlayerInputBuffer<T>` for the given player number that is held in this
+    /// `MultiplayerInputBuffers<T>`.
     pub fn serialize_player_buffer(
         &self,
         player_num: PlayerNum,
@@ -215,6 +219,7 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
         }
         to_bincode_bytes(buf)
     }
+
     pub fn deserialize_player_buffer(&mut self, player_num: PlayerNum, data: &[u8]) {
         let buf = from_bincode_bytes::<PlayerInputBuffer<T>>(data).unwrap();
         let num: usize = player_num.into();

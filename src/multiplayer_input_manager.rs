@@ -105,6 +105,8 @@ impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
         self.buffers.get_input_statuses(input_num)
     }
 
+    /// Serializes the `PlayerInputBuffer<T>` for the given player number that is held in this
+    /// `MultiplayerInputBuffers<T>`.
     pub fn serialize_player_buffer(
         &self,
         player_num: PlayerNum,
@@ -113,6 +115,7 @@ impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
         self.buffers
             .serialize_player_buffer(player_num, reset_finalization)
     }
+
     pub fn deserialize_player_buffer(&mut self, player_num: PlayerNum, data: &[u8]) {
         self.buffers.deserialize_player_buffer(player_num, data)
     }
