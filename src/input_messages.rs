@@ -90,14 +90,30 @@ where
         match self {
             MsgPayload::AckFinalization(_) => true,
             MsgPayload::HostPong(_) => true,
+            MsgPayload::HostFinalizedSlice(_) => true,
 
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
-            MsgPayload::HostFinalizedSlice(_) => false,
             MsgPayload::PeerInputs(_) => false,
             MsgPayload::PreSimSync(_) => false,
             MsgPayload::GuestPing(_) => false,
             MsgPayload::GuestPongPong(_) => false,
+        }
+    }
+
+    /// Returns true if this message is a host reply to a guest message, and thus needs to be sent back to the guest.
+    pub fn is_host_reply(&self) -> bool {
+        match self {
+            MsgPayload::GuestPing(_) => true,
+            MsgPayload::GuestPongPong(_) => true,
+
+            MsgPayload::PreSimSync(_) => false,
+            MsgPayload::Empty => false,
+            MsgPayload::Invalid => false,
+            MsgPayload::AckFinalization(_) => false,
+            MsgPayload::HostFinalizedSlice(_) => false,
+            MsgPayload::PeerInputs(_) => false,
+            MsgPayload::HostPong(_) => false,
         }
     }
 }
