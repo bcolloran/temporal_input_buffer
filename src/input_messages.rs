@@ -84,6 +84,22 @@ where
             MsgPayload::GuestPongPong(_) => 8,
         }
     }
+
+    /// Returns true if this message is a guest reply to a host message, and thus needs to be sent back to the host.
+    pub fn is_guest_reply(&self) -> bool {
+        match self {
+            MsgPayload::AckFinalization(_) => true,
+            MsgPayload::HostPong(_) => true,
+
+            MsgPayload::Empty => false,
+            MsgPayload::Invalid => false,
+            MsgPayload::HostFinalizedSlice(_) => false,
+            MsgPayload::PeerInputs(_) => false,
+            MsgPayload::PreSimSync(_) => false,
+            MsgPayload::GuestPing(_) => false,
+            MsgPayload::GuestPongPong(_) => false,
+        }
+    }
 }
 
 pub fn to_bincode_bytes<T: Serialize>(value: &T) -> Vec<u8> {
