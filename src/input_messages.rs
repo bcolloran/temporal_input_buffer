@@ -106,12 +106,12 @@ where
         match self {
             MsgPayload::GuestPing(_) => true,
             MsgPayload::GuestPongPong(_) => true,
+            MsgPayload::HostFinalizedSlice(_) => true,
 
+            MsgPayload::AckFinalization(_) => false,
             MsgPayload::PreSimSync(_) => false,
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
-            MsgPayload::AckFinalization(_) => false,
-            MsgPayload::HostFinalizedSlice(_) => false,
             MsgPayload::PeerInputs(_) => false,
             MsgPayload::HostPong(_) => false,
         }
