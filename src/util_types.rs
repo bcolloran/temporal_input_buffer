@@ -8,7 +8,7 @@ use crate::input_trait::{SimInput, TestInputBytes};
 ///
 /// Note that by Godot convention, the host is always player_num 0.
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq, PartialOrd, Ord)]
-pub struct PlayerNum(pub u8);
+pub struct PlayerNum(pub(crate) u8);
 
 impl PlayerNum {
     pub const HOST: u8 = 0;
