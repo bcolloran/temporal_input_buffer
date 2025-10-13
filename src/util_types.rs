@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +7,7 @@ use crate::input_trait::{SimInput, TestInputBytes};
 /// A unique network identifier for a player.
 ///
 /// Note that by Godot convention, the host is always player_num 0.
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq, PartialOrd, Ord)]
 pub struct PlayerNum(pub(crate) u8);
 
 impl PlayerNum {
@@ -52,7 +52,7 @@ impl PlayerNum {
     }
 }
 
-impl Debug for PlayerNum {
+impl Display for PlayerNum {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "PNum_{}", self.0)
     }
