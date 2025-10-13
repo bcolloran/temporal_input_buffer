@@ -31,12 +31,20 @@ impl PlayerNum {
 
     /// For situations where you need to index into a guest-only array
     /// (e.g. an array of inputs from all guests, excluding the host)
-    pub fn guest_index(&self) -> Option<u8> {
+    pub fn guest_index(&self) -> Option<usize> {
         if self.is_host() {
             None
         } else {
-            Some(self.0 - 1)
+            Some(self.0 as usize - 1)
         }
+    }
+
+    /// Create a PlayerNum from a guest index (0-based, excluding host;
+    /// so i.e. PlayerNum::from_guest_index(0) == PlayerNum(1))
+    /// Panics if index is too large to fit in u8
+    ///
+    pub fn from_guest_index(index: usize) -> Self {
+        PlayerNum((index + 1) as u8)
     }
 }
 
