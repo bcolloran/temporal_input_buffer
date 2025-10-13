@@ -7,11 +7,43 @@ use crate::input_trait::{SimInput, TestInputBytes};
 /// A unique network identifier for a player.
 ///
 /// Note that by Godot convention, the host is always player_num 0.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq, PartialOrd, Ord)]
 pub struct PlayerNum(pub u8);
 
 impl PlayerNum {
     pub const HOST: u8 = 0;
+
+    pub fn new_host() -> Self {
+        PlayerNum(Self::HOST)
+    }
+    pub fn new_guest(player_num: u8) -> Self {
+        assert!(player_num != Self::HOST);
+        PlayerNum(player_num)
+    }
+
+    pub fn is_host(&self) -> bool {
+        self.0 == Self::HOST
+    }
+
+    pub fn is_guest(&self) -> bool {
+        self.0 != Self::HOST
+    }
+
+    /// For situations where you need to index into a guest-only array
+    /// (e.g. an array of inputs from all guests, excluding the host)
+    pub fn guest_index(&self) -> Option<u8> {
+        if self.is_host() {
+            None
+        } else {
+            Some(self.0 - 1)
+        }
+    }
+}
+
+impl Debug for PlayerNum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PNum_{}", self.0)
+    }
 }
 
 impl Into<String> for PlayerNum {
