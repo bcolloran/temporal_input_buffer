@@ -11,7 +11,11 @@ use crate::input_trait::{SimInput, TestInputBytes};
 pub struct PlayerNum(pub(crate) u8);
 
 impl PlayerNum {
-    pub const HOST: u8 = 0;
+    const HOST: u8 = 0;
+
+    pub fn from_u8(player_num: u8) -> Self {
+        PlayerNum(player_num)
+    }
 
     pub fn new_host() -> Self {
         PlayerNum(Self::HOST)
