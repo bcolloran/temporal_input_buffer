@@ -29,6 +29,10 @@ impl PlayerNum {
         self.0 != Self::HOST
     }
 
+    pub fn as_u8(&self) -> u8 {
+        self.0
+    }
+
     /// For situations where you need to index into a guest-only array
     /// (e.g. an array of inputs from all guests, excluding the host)
     pub fn guest_index(&self) -> Option<usize> {
