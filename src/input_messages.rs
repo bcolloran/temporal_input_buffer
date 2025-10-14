@@ -53,6 +53,8 @@ pub enum MsgPayload<T: SimInput> {
     AckFinalization(PeerwiseFinalizedInputsSeen),
 
     /// message from host to all peers with finalized inputs
+    ///
+    /// THIS SHOULD BE BROADCAST TO ALL PEERS
     HostFinalizedSlice(HostFinalizedSlice<T>),
 
     /// message from any peer to any other with inputs
@@ -101,13 +103,29 @@ where
         }
     }
 
-    /// Returns true if this message is a host reply to a guest message, and thus needs to be sent back to the guest.
-    pub fn is_host_reply(&self) -> bool {
+    /// Returns true if this message is a host reply that should be broadcast to all guests.
+    pub fn is_host_reply_for_all(&self) -> bool {
+        match self {
+            MsgPayload::HostFinalizedSlice(_) => true,
+
+            MsgPayload::GuestPing(_) => false,
+            MsgPayload::GuestPongPong(_) => false,
+            MsgPayload::AckFinalization(_) => false,
+            MsgPayload::PreSimSync(_) => false,
+            MsgPayload::Empty => false,
+            MsgPayload::Invalid => false,
+            MsgPayload::PeerInputs(_) => false,
+            MsgPayload::HostPong(_) => false,
+        }
+    }
+
+    /// Returns true if this message is a host reply that should only be sent back to the originating guest.
+    pub fn is_host_reply_for_one(&self) -> bool {
         match self {
             MsgPayload::GuestPing(_) => true,
             MsgPayload::GuestPongPong(_) => true,
-            MsgPayload::HostFinalizedSlice(_) => true,
 
+            MsgPayload::HostFinalizedSlice(_) => false,
             MsgPayload::AckFinalization(_) => false,
             MsgPayload::PreSimSync(_) => false,
             MsgPayload::Empty => false,
