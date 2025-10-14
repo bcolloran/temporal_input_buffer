@@ -140,8 +140,10 @@ where
     /// Returns true if this message is a host reply that should only be sent back to the originating guest.
     pub fn is_host_reply_for_one(&self) -> bool {
         match self {
-            MsgPayload::GuestPing(_) => true,
-            MsgPayload::GuestPongPong(_) => true,
+            MsgPayload::HostPong(_) => true,
+
+            MsgPayload::GuestPing(_) => false,
+            MsgPayload::GuestPongPong(_) => false,
 
             MsgPayload::HostFinalizedSlice(_) => false,
             MsgPayload::AckFinalization(_) => false,
@@ -149,7 +151,6 @@ where
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
             MsgPayload::PeerInputs(_) => false,
-            MsgPayload::HostPong(_) => false,
         }
     }
 }

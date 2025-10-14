@@ -65,7 +65,7 @@ pub struct GuestInputMgr {
     /// can be negative in the pre-sim sync phase
     host_tick: i32,
 
-    /// the number of ticks it takes for a finalization to
+    /// the number of ms it takes for a finalization to
     /// make it from the host to this peer
     rtt_ms_to_host: Option<Ewma>,
 

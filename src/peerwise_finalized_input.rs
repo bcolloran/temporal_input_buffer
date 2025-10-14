@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::util_types::PlayerNum;
 
 /// For each peer, the number of inputs that have
-/// been finalized by the host *that the peer who
+/// been finalized by the host *and that the peer who
 /// sent this ack has seen* ie., that they have in their
 /// own local MultiplayerInputBuffer.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
