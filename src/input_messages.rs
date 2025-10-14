@@ -8,6 +8,15 @@ use super::{
     util_types::{PlayerInputSlice, PlayerNum},
 };
 
+/// A slice of inputs finalized by the host for a specific player.
+///
+/// When the host sees new inputs from a guest, it will generate this message to inform all peers of the finalized inputs it has seen from that guest. The slice will be generated starting from the earliest input tick for this player that had been confirmed as finalized by all peers. Thus, by sending this message to all players, it can be guaranteed that reciept of this message on any guest will not leave any gaps in that guest's input buffer.
+///
+/// This finalized slice IS NOT customized per peer; it is the same for all peers. This means that there may be some redundant inputs sent to some peers, if those peers had already seen some of the inputs in the slice.
+///
+/// Whenever the host generates this message, it should be broadcast to all peers.
+///
+/// We send the host_tick on which the host is sending this message, so that peers can use this to estimate their latency to the host. We send the the host tick along with finalized inputs (rather than in a separate message) to avoid increasing the number of messages sent, and under the theory that the host will be sending finalized inputs frequently enough that this will provide a good estimate of latency.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HostFinalizedSlice<T: SimInput> {
     pub player_num: PlayerNum,
@@ -52,7 +61,7 @@ pub enum MsgPayload<T: SimInput> {
     /// message from guest to host with ack of finalized inputs
     AckFinalization(PeerwiseFinalizedInputsSeen),
 
-    /// message from host to all peers with finalized inputs
+    /// message from host to all peers with finalized inputs --
     ///
     /// THIS SHOULD BE BROADCAST TO ALL PEERS
     HostFinalizedSlice(HostFinalizedSlice<T>),
@@ -64,8 +73,17 @@ pub enum MsgPayload<T: SimInput> {
     /// and list of peers
     PreSimSync(PreSimSync),
 
+    /// message from guest to host to measure ping; the u32 is just a ping id
+    /// so the guest can match the pong to the ping it sent
     GuestPing(u32),
+    /// message from host to guest in reply to GuestPing. The u32 is the ping id
+    /// so the guest can match the pong to the ping it sent.
     HostPong(u32),
+    /// message from guest to host in reply to HostPong. The u32 is the ping id
+    /// so the host can match the pong to the ping it sent.
+    ///
+    /// The time between the host sending the ping and receiving this pong
+    /// can be used to estimate the round-trip time (RTT) between host and guest
     GuestPongPong(u32),
 }
 
