@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bincode::error::DecodeError;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +26,20 @@ pub struct HostFinalizedSlice<T: SimInput> {
     /// the finalized inputs to the peer
     pub host_tick: u32,
     pub inputs: PlayerInputSlice<T>,
+}
+
+impl<T> Display for HostFinalizedSlice<T>
+where
+    T: SimInput + Display,
+    <T as SimInput>::Bytes: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "FinalizedSlice(for: {}; host_tick: {}, inputs: {})",
+            self.player_num, self.host_tick, self.inputs
+        )
+    }
 }
 
 impl<T: SimInput + TestInputBytes> HostFinalizedSlice<T> {
@@ -86,6 +102,40 @@ pub enum MsgPayload<T: SimInput> {
     /// The time between the host sending the ping and receiving this pong
     /// can be used to estimate the round-trip time (RTT) between host and guest
     GuestToHostPongPong(u32),
+}
+
+impl<T> Display for MsgPayload<T>
+where
+    T: SimInput + Display,
+    <T as SimInput>::Bytes: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MsgPayload::Empty => write!(f, "SimMsg::Empty"),
+            MsgPayload::Invalid => write!(f, "SimMsg::Invalid"),
+            MsgPayload::GuestToHostAckFinalization(ack) => {
+                write!(f, "SimMsg::G2h:AckFinalization({ack})")
+            }
+            MsgPayload::HostToLobbyFinalizedSlice(slice) => {
+                write!(f, "SimMsg::H2all:FinalizedSlice({slice})")
+            }
+            MsgPayload::PeerInputs(slice) => {
+                write!(f, "SimMsg::PeerInputs({slice})")
+            }
+            MsgPayload::HostToGuestPreSimSync(sync) => {
+                write!(f, "SimMsg::HostToGuestPreSimSync({sync:?})")
+            }
+            MsgPayload::GuestToHostPing(ping_id) => {
+                write!(f, "SimMsg::G2h:Ping({ping_id})")
+            }
+            MsgPayload::HostToGuestPong(ping_id) => {
+                write!(f, "SimMsg::HostToGuestPong({ping_id})")
+            }
+            MsgPayload::GuestToHostPongPong(ping_id) => {
+                write!(f, "SimMsg::G2h:PongPong({ping_id})")
+            }
+        }
+    }
 }
 
 impl<T> MsgPayload<T>

@@ -148,3 +148,22 @@ where
         }
     }
 }
+
+impl<T> Display for PlayerInputSlice<T>
+where
+    T: SimInput,
+    <T as SimInput>::Bytes: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "InputSlice(start: {}; len {}; inputs: [",
+            self.start,
+            self.len()
+        )?;
+        for input in &self.inputs {
+            write!(f, "{}, ", input)?;
+        }
+        write!(f, "])")
+    }
+}

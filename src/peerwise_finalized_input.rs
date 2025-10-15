@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,18 @@ use super::util_types::PlayerNum;
 /// own local MultiplayerInputBuffer.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PeerwiseFinalizedInputsSeen(HashMap<PlayerNum, u32>);
+
+impl Display for PeerwiseFinalizedInputsSeen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FinalizedInputsSeen(")?;
+        let mut sorted = self.0.iter().collect::<Vec<_>>();
+        sorted.sort_by_key(|(p, _)| p.0);
+        for (player_num, tick) in &sorted {
+            write!(f, "{}: {}, ", player_num.0, tick)?;
+        }
+        write!(f, ")")
+    }
+}
 
 impl PeerwiseFinalizedInputsSeen {
     pub fn new(map: HashMap<PlayerNum, u32>) -> Self {
