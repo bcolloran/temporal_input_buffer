@@ -30,7 +30,7 @@ pub struct HostFinalizedSlice<T: SimInput> {
 
 impl<T> Display for HostFinalizedSlice<T>
 where
-    T: SimInput + Display,
+    T: SimInput,
     <T as SimInput>::Bytes: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -106,7 +106,7 @@ pub enum MsgPayload<T: SimInput> {
 
 impl<T> Display for MsgPayload<T>
 where
-    T: SimInput + Display,
+    T: SimInput,
     <T as SimInput>::Bytes: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
