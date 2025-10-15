@@ -9,7 +9,6 @@ use crate::{
     util_types::{PlayerInputSlice, PlayerNum},
 };
 
-
 #[test_case(MsgPayload::<PlayerInput>::Empty; "empty")]
 #[test_case(MsgPayload::<PlayerInput>::Invalid; "invalid")]
 #[test_case(MsgPayload::<PlayerInput>::AckFinalization(

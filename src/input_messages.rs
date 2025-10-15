@@ -105,19 +105,19 @@ where
         }
     }
 
-    /// Returns true if this message is a guest reply to a host message, and thus needs to be sent back to the host.
+    /// Returns true if this message is a guest reply to a host message, and thus needs to be sent to the host.
     pub fn is_guest_reply(&self) -> bool {
         match self {
             MsgPayload::AckFinalization(_) => true,
-            MsgPayload::HostPong(_) => true,
-            MsgPayload::HostFinalizedSlice(_) => true,
+            MsgPayload::GuestPing(_) => true,
+            MsgPayload::GuestPongPong(_) => true,
 
+            MsgPayload::HostPong(_) => false,
+            MsgPayload::HostFinalizedSlice(_) => false,
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
             MsgPayload::PeerInputs(_) => false,
             MsgPayload::PreSimSync(_) => false,
-            MsgPayload::GuestPing(_) => false,
-            MsgPayload::GuestPongPong(_) => false,
         }
     }
 
