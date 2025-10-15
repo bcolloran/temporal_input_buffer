@@ -221,10 +221,10 @@ impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
     }
 
     pub fn rx_host_pong_and_reply(&mut self, msg: MsgPayload<T>) -> MsgPayload<T> {
-        if let MsgPayload::HostPong(ping_id) = msg {
+        if let MsgPayload::HostToGuestPong(ping_id) = msg {
             let rtt = self.inner.pings.observe_pong(ping_id);
             self.observe_rtt_ms_to_host(rtt);
-            MsgPayload::GuestPongPong(ping_id)
+            MsgPayload::GuestToHostPongPong(ping_id)
         } else {
             panic!("Expected HostPong");
         }
@@ -234,12 +234,12 @@ impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
     /// a finalized input slice.
     pub fn get_msg_ack_finalization(&mut self) -> MsgPayload<T> {
         let finalized_ticks = self.buffers.get_peerwise_finalized_inputs();
-        MsgPayload::AckFinalization(finalized_ticks).into()
+        MsgPayload::GuestToHostAckFinalization(finalized_ticks).into()
     }
 
     pub fn get_msg_guest_ping(&mut self) -> MsgPayload<T> {
         let ping_id = self.inner.pings.send_next_ping();
-        MsgPayload::GuestPing(ping_id).into()
+        MsgPayload::GuestToHostPing(ping_id).into()
     }
 }
 

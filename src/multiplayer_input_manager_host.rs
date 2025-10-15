@@ -130,14 +130,14 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
         player_num: PlayerNum,
         msg: MsgPayload<T>,
     ) -> MsgPayload<T> {
-        if let MsgPayload::GuestPing(id) = msg {
+        if let MsgPayload::GuestToHostPing(id) = msg {
             self.inner
                 .pong_send_times
                 .entry(player_num)
                 .or_insert(PongSendTimes::default())
                 .record_pong_send(id);
 
-            MsgPayload::HostPong(id)
+            MsgPayload::HostToGuestPong(id)
         } else {
             panic!("fn rx_guest_ping can only handle GuestPing message")
         }
@@ -148,7 +148,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
         player_num: PlayerNum,
         msg: MsgPayload<T>,
     ) -> Result<MsgPayload<T>, String> {
-        if let MsgPayload::GuestPongPong(id) = msg {
+        if let MsgPayload::GuestToHostPongPong(id) = msg {
             let rtt = self
                 .inner
                 .pong_send_times

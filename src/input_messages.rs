@@ -52,6 +52,7 @@ impl Default for PreSimSync {
     }
 }
 
+/// FIXME: rather than just naming convention, break this up into separate enums for host and guest messages and broadcast vs direct messages?
 #[derive(Default, Debug, Clone)]
 pub enum MsgPayload<T: SimInput> {
     #[default]
@@ -59,32 +60,32 @@ pub enum MsgPayload<T: SimInput> {
     Invalid,
 
     /// message from guest to host with ack of finalized inputs
-    AckFinalization(PeerwiseFinalizedInputsSeen),
+    GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen),
 
     /// message from host to all peers with finalized inputs --
     ///
     /// THIS SHOULD BE BROADCAST TO ALL PEERS
-    HostFinalizedSlice(HostFinalizedSlice<T>),
+    HostToLobbyFinalizedSlice(HostFinalizedSlice<T>),
 
     /// message from any peer to any other with inputs
     PeerInputs(PlayerInputSlice<T>),
 
     /// message from host to peer with countdown to sim start,
     /// and list of peers
-    PreSimSync(PreSimSync),
+    HostToGuestPreSimSync(PreSimSync),
 
     /// message from guest to host to measure ping; the u32 is just a ping id
     /// so the guest can match the pong to the ping it sent
-    GuestPing(u32),
+    GuestToHostPing(u32),
     /// message from host to guest in reply to GuestPing. The u32 is the ping id
     /// so the guest can match the pong to the ping it sent.
-    HostPong(u32),
+    HostToGuestPong(u32),
     /// message from guest to host in reply to HostPong. The u32 is the ping id
     /// so the host can match the pong to the ping it sent.
     ///
     /// The time between the host sending the ping and receiving this pong
     /// can be used to estimate the round-trip time (RTT) between host and guest
-    GuestPongPong(u32),
+    GuestToHostPongPong(u32),
 }
 
 impl<T> MsgPayload<T>
@@ -95,59 +96,64 @@ where
         match self {
             MsgPayload::Empty => 0,
             MsgPayload::Invalid => 1,
-            MsgPayload::AckFinalization(_) => 2,
-            MsgPayload::HostFinalizedSlice(_) => 3,
+            MsgPayload::GuestToHostAckFinalization(_) => 2,
+            MsgPayload::HostToLobbyFinalizedSlice(_) => 3,
             MsgPayload::PeerInputs(_) => 4,
-            MsgPayload::PreSimSync(_) => 5,
-            MsgPayload::GuestPing(_) => 6,
-            MsgPayload::HostPong(_) => 7,
-            MsgPayload::GuestPongPong(_) => 8,
+            MsgPayload::HostToGuestPreSimSync(_) => 5,
+            MsgPayload::GuestToHostPing(_) => 6,
+            MsgPayload::HostToGuestPong(_) => 7,
+            MsgPayload::GuestToHostPongPong(_) => 8,
         }
     }
 
     /// Returns true if this message is a guest reply to a host message, and thus needs to be sent to the host.
     pub fn is_guest_reply(&self) -> bool {
         match self {
-            MsgPayload::AckFinalization(_) => true,
-            MsgPayload::GuestPing(_) => true,
-            MsgPayload::GuestPongPong(_) => true,
+            MsgPayload::GuestToHostAckFinalization(_) => true,
+            MsgPayload::GuestToHostPing(_) => true,
+            MsgPayload::GuestToHostPongPong(_) => true,
 
-            MsgPayload::HostPong(_) => false,
-            MsgPayload::HostFinalizedSlice(_) => false,
+            MsgPayload::HostToLobbyFinalizedSlice(_) => false,
+            MsgPayload::HostToGuestPreSimSync(_) => false,
+
+            MsgPayload::HostToGuestPong(_) => false,
+
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
             MsgPayload::PeerInputs(_) => false,
-            MsgPayload::PreSimSync(_) => false,
         }
     }
 
     /// Returns true if this message is a host reply that should be broadcast to all guests.
     pub fn is_host_reply_for_all(&self) -> bool {
         match self {
-            MsgPayload::HostFinalizedSlice(_) => true,
+            MsgPayload::HostToLobbyFinalizedSlice(_) => true,
+            MsgPayload::HostToGuestPreSimSync(_) => true,
 
-            MsgPayload::GuestPing(_) => false,
-            MsgPayload::GuestPongPong(_) => false,
-            MsgPayload::AckFinalization(_) => false,
-            MsgPayload::PreSimSync(_) => false,
+            MsgPayload::HostToGuestPong(_) => false,
+
+            MsgPayload::GuestToHostPing(_) => false,
+            MsgPayload::GuestToHostPongPong(_) => false,
+            MsgPayload::GuestToHostAckFinalization(_) => false,
+
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
             MsgPayload::PeerInputs(_) => false,
-            MsgPayload::HostPong(_) => false,
         }
     }
 
     /// Returns true if this message is a host reply that should only be sent back to the originating guest.
     pub fn is_host_reply_for_one(&self) -> bool {
         match self {
-            MsgPayload::HostPong(_) => true,
+            MsgPayload::HostToLobbyFinalizedSlice(_) => false,
+            MsgPayload::HostToGuestPreSimSync(_) => false,
 
-            MsgPayload::GuestPing(_) => false,
-            MsgPayload::GuestPongPong(_) => false,
+            MsgPayload::HostToGuestPong(_) => true,
 
-            MsgPayload::HostFinalizedSlice(_) => false,
-            MsgPayload::AckFinalization(_) => false,
-            MsgPayload::PreSimSync(_) => false,
+            MsgPayload::GuestToHostPing(_) => false,
+            MsgPayload::GuestToHostPongPong(_) => false,
+            MsgPayload::GuestToHostAckFinalization(_) => false,
+
             MsgPayload::Empty => false,
             MsgPayload::Invalid => false,
             MsgPayload::PeerInputs(_) => false,
@@ -172,13 +178,13 @@ impl<T: SimInput> MsgPayload<T> {
         let extension_bytes = match self {
             MsgPayload::Empty => vec![],
             MsgPayload::Invalid => vec![],
-            MsgPayload::AckFinalization(ack) => to_bincode_bytes(ack),
-            MsgPayload::HostFinalizedSlice(slice) => to_bincode_bytes(slice),
+            MsgPayload::GuestToHostAckFinalization(ack) => to_bincode_bytes(ack),
+            MsgPayload::HostToLobbyFinalizedSlice(slice) => to_bincode_bytes(slice),
             MsgPayload::PeerInputs(slice) => to_bincode_bytes(slice),
-            MsgPayload::PreSimSync(sync) => to_bincode_bytes(sync),
-            MsgPayload::GuestPing(ping_id) => to_bincode_bytes(ping_id),
-            MsgPayload::HostPong(ping_id) => to_bincode_bytes(ping_id),
-            MsgPayload::GuestPongPong(ping_id) => to_bincode_bytes(ping_id),
+            MsgPayload::HostToGuestPreSimSync(sync) => to_bincode_bytes(sync),
+            MsgPayload::GuestToHostPing(ping_id) => to_bincode_bytes(ping_id),
+            MsgPayload::HostToGuestPong(ping_id) => to_bincode_bytes(ping_id),
+            MsgPayload::GuestToHostPongPong(ping_id) => to_bincode_bytes(ping_id),
         };
         bytes.extend(extension_bytes);
         bytes
@@ -198,17 +204,23 @@ impl<T: SimInput> MsgPayload<T> {
         match variant_num {
             0 => Ok(MsgPayload::Empty),
             1 => Ok(MsgPayload::Invalid),
-            2 => Ok(MsgPayload::AckFinalization(from_bincode_bytes(
+            2 => Ok(MsgPayload::GuestToHostAckFinalization(from_bincode_bytes(
                 payload_bytes,
             )?)),
-            3 => Ok(MsgPayload::HostFinalizedSlice(from_bincode_bytes(
+            3 => Ok(MsgPayload::HostToLobbyFinalizedSlice(from_bincode_bytes(
                 payload_bytes,
             )?)),
             4 => Ok(MsgPayload::PeerInputs(from_bincode_bytes(payload_bytes)?)),
-            5 => Ok(MsgPayload::PreSimSync(from_bincode_bytes(payload_bytes)?)),
-            6 => Ok(MsgPayload::GuestPing(from_bincode_bytes(payload_bytes)?)),
-            7 => Ok(MsgPayload::HostPong(from_bincode_bytes(payload_bytes)?)),
-            8 => Ok(MsgPayload::GuestPongPong(from_bincode_bytes(
+            5 => Ok(MsgPayload::HostToGuestPreSimSync(from_bincode_bytes(
+                payload_bytes,
+            )?)),
+            6 => Ok(MsgPayload::GuestToHostPing(from_bincode_bytes(
+                payload_bytes,
+            )?)),
+            7 => Ok(MsgPayload::HostToGuestPong(from_bincode_bytes(
+                payload_bytes,
+            )?)),
+            8 => Ok(MsgPayload::GuestToHostPongPong(from_bincode_bytes(
                 payload_bytes,
             )?)),
             x => Err(DecodeError::OtherString(format!(
@@ -220,7 +232,7 @@ impl<T: SimInput> MsgPayload<T> {
 
 impl<T: SimInput> Into<MsgPayload<T>> for HostFinalizedSlice<T> {
     fn into(self) -> MsgPayload<T> {
-        MsgPayload::HostFinalizedSlice(self)
+        MsgPayload::HostToLobbyFinalizedSlice(self)
     }
 }
 
@@ -232,13 +244,13 @@ impl<T: SimInput> Into<MsgPayload<T>> for PlayerInputSlice<T> {
 
 impl<T: SimInput> Into<MsgPayload<T>> for PeerwiseFinalizedInputsSeen {
     fn into(self) -> MsgPayload<T> {
-        MsgPayload::AckFinalization(self)
+        MsgPayload::GuestToHostAckFinalization(self)
     }
 }
 
 impl<T: SimInput> Into<MsgPayload<T>> for PreSimSync {
     fn into(self) -> MsgPayload<T> {
-        MsgPayload::PreSimSync(self)
+        MsgPayload::HostToGuestPreSimSync(self)
     }
 }
 
@@ -256,7 +268,7 @@ impl<T: SimInput> TryInto<HostFinalizedSlice<T>> for MsgPayload<T> {
     type Error = ();
     fn try_into(self) -> Result<HostFinalizedSlice<T>, Self::Error> {
         match self {
-            MsgPayload::HostFinalizedSlice(slice) => Ok(slice),
+            MsgPayload::HostToLobbyFinalizedSlice(slice) => Ok(slice),
             _ => Err(()),
         }
     }
@@ -266,7 +278,7 @@ impl<T: SimInput> TryInto<PeerwiseFinalizedInputsSeen> for MsgPayload<T> {
     type Error = ();
     fn try_into(self) -> Result<PeerwiseFinalizedInputsSeen, Self::Error> {
         match self {
-            MsgPayload::AckFinalization(ack) => Ok(ack),
+            MsgPayload::GuestToHostAckFinalization(ack) => Ok(ack),
             _ => Err(()),
         }
     }
@@ -276,7 +288,7 @@ impl<T: SimInput> TryInto<PreSimSync> for MsgPayload<T> {
     type Error = ();
     fn try_into(self) -> Result<PreSimSync, Self::Error> {
         match self {
-            MsgPayload::PreSimSync(sync) => Ok(sync),
+            MsgPayload::HostToGuestPreSimSync(sync) => Ok(sync),
             _ => Err(()),
         }
     }

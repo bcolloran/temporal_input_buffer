@@ -66,7 +66,7 @@ fn test_snapshottable_sim_tick() {
     assert_eq!(manager.get_snapshottable_sim_tick(), 0);
 
     // rx a finalized input slice for self
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         own_id.into(),
         0,
         0,
@@ -81,7 +81,7 @@ fn test_snapshottable_sim_tick() {
     // but with a lower max tick
     let host_id = 0;
     let inputs_to_add = 3;
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         host_id.into(),
         0,
         0,
@@ -94,7 +94,7 @@ fn test_snapshottable_sim_tick() {
 
     // rx a finalized input slice for other player
     // that would leave a gap in the input buffer
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         host_id.into(),
         0,
         inputs_to_add + 1,
@@ -109,7 +109,7 @@ fn test_snapshottable_sim_tick() {
 
     // rx a finalized input slice for other player
     // that does not leave a gap in the input buffer
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         host_id.into(),
         0,
         inputs_to_add,
@@ -142,7 +142,7 @@ pub fn test_get_msg_own_input_slice() {
     }
 
     // now rx a finalized input slice for self with only 3 inputs
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         own_id.into(),
         0,
         0,
@@ -173,14 +173,16 @@ pub fn test_get_msg_ack_finalization() {
 
     let msg_finalize = manager.get_msg_ack_finalization();
     // no finalized inputs yet, only one peer seen
-    if let MsgPayload::AckFinalization(finalized_ticks) = msg_finalize.try_into().unwrap() {
+    if let MsgPayload::GuestToHostAckFinalization(finalized_ticks) =
+        msg_finalize.try_into().unwrap()
+    {
         assert_eq!(finalized_ticks.get(own_id.into()), 0);
     } else {
         panic!("Expected AckFinalization");
     }
 
     // now rx a finalized input slice for self with only 3 inputs
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         own_id.into(),
         0,
         0,
@@ -191,7 +193,9 @@ pub fn test_get_msg_ack_finalization() {
 
     let msg_finalize = manager.get_msg_ack_finalization();
     // now 3 inputs have been finalized for this peer
-    if let MsgPayload::AckFinalization(finalized_ticks) = msg_finalize.try_into().unwrap() {
+    if let MsgPayload::GuestToHostAckFinalization(finalized_ticks) =
+        msg_finalize.try_into().unwrap()
+    {
         assert_eq!(finalized_ticks.get(own_id.into()), 3);
     } else {
         panic!("Expected AckFinalization");
@@ -199,7 +203,7 @@ pub fn test_get_msg_ack_finalization() {
 
     // now rx a finalized input slice for another player
     let other_id = 2;
-    let msg = MsgPayload::HostFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
+    let msg = MsgPayload::HostToLobbyFinalizedSlice(HostFinalizedSlice::<PlayerInput>::new_test(
         other_id.into(),
         0,
         0,
@@ -210,7 +214,9 @@ pub fn test_get_msg_ack_finalization() {
     let msg_finalize = manager.get_msg_ack_finalization();
     // now 3 inputs have been finalized for this peer,
     // and 5 for the other peer
-    if let MsgPayload::AckFinalization(finalized_ticks) = msg_finalize.try_into().unwrap() {
+    if let MsgPayload::GuestToHostAckFinalization(finalized_ticks) =
+        msg_finalize.try_into().unwrap()
+    {
         assert_eq!(finalized_ticks.get(own_id.into()), 3);
         assert_eq!(finalized_ticks.get(other_id.into()), 5);
     } else {

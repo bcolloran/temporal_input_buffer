@@ -77,10 +77,11 @@ fn test_get_finalization_start_for_peer() {
 
     // now have the peer ack inputs up to tick 3 for host,
     // and up to tick 5 for themselves
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 3),
-        (other_id.into(), 5),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 3),
+            (other_id.into(), 5),
+        ])));
     manager.rx_finalized_ticks_observations(other_id.into(), msg);
 
     assert_eq!(
@@ -122,11 +123,12 @@ fn test_get_finalization_start_for_peer_2() {
     // now have peer_2 ack inputs up to tick 3 for host,
     // and up to tick 5 for themselves
     // and up to tick 7 for peer 3
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 3),
-        (peer_2.into(), 5),
-        (peer_3.into(), 7),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 3),
+            (peer_2.into(), 5),
+            (peer_3.into(), 7),
+        ])));
     manager.rx_finalized_ticks_observations(peer_2.into(), msg.clone());
 
     // peer_3 has not acked any inputs yet, so the earliest
@@ -137,11 +139,12 @@ fn test_get_finalization_start_for_peer_2() {
     );
 
     // now have peer_3 ack inputs up to tick 9 across all peers
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 9),
-        (peer_2.into(), 9),
-        (peer_3.into(), 9),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 9),
+            (peer_2.into(), 9),
+            (peer_3.into(), 9),
+        ])));
     manager.rx_finalized_ticks_observations(peer_3.into(), msg);
 
     assert_eq!(
@@ -158,11 +161,12 @@ fn test_get_finalization_start_for_peer_2() {
     );
 
     // now have peer_2 ack inputs up to tick 15 across all peers
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 15),
-        (peer_2.into(), 15),
-        (peer_3.into(), 15),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 15),
+            (peer_2.into(), 15),
+            (peer_3.into(), 15),
+        ])));
     manager.rx_finalized_ticks_observations(peer_2.into(), msg);
 
     assert_eq!(
@@ -204,7 +208,7 @@ fn test_get_msg_catch_up_with_no_acks() {
     // at this point, the host has "seen" and finalized
     // 5 virtual catch-up inputs, for this peer
     let msg = manager.get_msg_finalized_late_inputs_for_guest(peer_id.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = msg {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = msg {
         assert_eq!(slice.player_num, PlayerNum(peer_id));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -229,7 +233,7 @@ fn test_get_msg_catch_up_with_no_acks() {
         manager.add_own_input(PlayerInput::default());
     }
     let msg = manager.get_msg_finalized_late_inputs_for_guest(peer_id.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = msg {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = msg {
         assert_eq!(slice.player_num, PlayerNum(peer_id));
         assert_eq!(slice.host_tick, 12);
         assert_eq!(slice.inputs.start, 0);
@@ -256,14 +260,15 @@ fn test_get_msg_catch_up_with_guest_acks() {
 
     // add ack for peer only up to tick 3;
     // the host should send inputs up to catch up as far as 5
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 3),
-        (peer_id.into(), 3),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 3),
+            (peer_id.into(), 3),
+        ])));
     manager.rx_finalized_ticks_observations(peer_id.into(), msg);
 
     let msg = manager.get_msg_finalized_late_inputs_for_guest(peer_id.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = msg {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = msg {
         assert_eq!(slice.player_num, PlayerNum(peer_id));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 3);
@@ -285,16 +290,17 @@ fn test_get_msg_catch_up_with_guest_acks() {
         manager.add_own_input(PlayerInput::default());
     }
     // ack for peer up to tick 15
-    let msg = MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
-        (HOST_PLAYER_NUM, 15),
-        (peer_id.into(), 15),
-    ])));
+    let msg =
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            (HOST_PLAYER_NUM, 15),
+            (peer_id.into(), 15),
+        ])));
     manager.rx_finalized_ticks_observations(peer_id.into(), msg);
 
     // The peer should now be 15 inputs behind, so the host
     // should send them inputs up to 25
     let msg = manager.get_msg_finalized_late_inputs_for_guest(peer_id.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = msg {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = msg {
         assert_eq!(slice.player_num, PlayerNum(peer_id));
         assert_eq!(slice.host_tick, 30);
         assert_eq!(slice.inputs.start, 15);
@@ -331,7 +337,7 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
     // no peers have acked any inputs yet, so the host should be
     // sending slices starting at input 0 for all peers
     let slice_host = manager.get_msg_finalized_slice(0.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, HOST_PLAYER_NUM);
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -341,7 +347,7 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_2.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_2));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -351,7 +357,7 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_3.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_3));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -391,7 +397,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     // up to 1 for peer_3
     manager.rx_finalized_ticks_observations(
         peer_2.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 3),
             (peer_2.into(), 5),
             (peer_3.into(), 1),
@@ -401,7 +407,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     // nothing changed for peer_3, so the least common denominator
     // input slices must remain the same
     let slice_host = manager.get_msg_finalized_slice(1.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, HOST_PLAYER_NUM);
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -411,7 +417,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_2.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_2));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -421,7 +427,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_3.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_3));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 0);
@@ -461,7 +467,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // up to 1 for peer_3
     manager.rx_finalized_ticks_observations(
         peer_2.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 3),
             (peer_2.into(), 5),
             (peer_3.into(), 1),
@@ -474,7 +480,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // up to 7 for peer_2
     manager.rx_finalized_ticks_observations(
         peer_3.into(),
-        MsgPayload::AckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
+        MsgPayload::GuestToHostAckFinalization(PeerwiseFinalizedInputsSeen::new(HashMap::from([
             (1.into(), 7),
             (peer_2.into(), 7),
             (peer_3.into(), 7),
@@ -485,7 +491,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     // so the least common denominator input slices should
     // fill in from what peer 2 has acked
     let slice_host = manager.get_msg_finalized_slice(1.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, HOST_PLAYER_NUM);
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 3);
@@ -495,7 +501,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_2.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_2));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 5);
@@ -505,7 +511,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
     }
 
     let slice_host = manager.get_msg_finalized_slice(peer_3.into());
-    if let MsgPayload::HostFinalizedSlice(slice) = slice_host {
+    if let MsgPayload::HostToLobbyFinalizedSlice(slice) = slice_host {
         assert_eq!(slice.player_num, PlayerNum(peer_3));
         assert_eq!(slice.host_tick, 10);
         assert_eq!(slice.inputs.start, 7);
