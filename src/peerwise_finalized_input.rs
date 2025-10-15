@@ -15,9 +15,9 @@ impl Display for PeerwiseFinalizedInputsSeen {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "FinalizedInputsSeen(")?;
         let mut sorted = self.0.iter().collect::<Vec<_>>();
-        sorted.sort_by_key(|(p, _)| p.0);
+        sorted.sort_by_key(|&(p, _)| p);
         for (player_num, tick) in &sorted {
-            write!(f, "{}: {}, ", player_num.0, tick)?;
+            write!(f, "{}:{} ", player_num, tick)?;
         }
         write!(f, ")")
     }
