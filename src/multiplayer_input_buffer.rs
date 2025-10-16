@@ -114,13 +114,13 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
         self.buffer_by_player_num(player_num).finalized_inputs()
     }
 
-    pub fn get_num_finalized_inputs_per_peer(&self) -> HashMap<PlayerNum, u32> {
-        self.buffers
-            .iter()
-            .enumerate()
-            .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs()))
-            .collect()
-    }
+    // pub fn get_num_finalized_inputs_per_peer(&self) -> HashMap<PlayerNum, u32> {
+    //     self.buffers
+    //         .iter()
+    //         .enumerate()
+    //         .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs()))
+    //         .collect()
+    // }
 
     pub fn receive_peer_input_slice(&mut self, slice: PlayerInputSlice<T>, player_num: PlayerNum) {
         self.buffer_mut_by_player_num(player_num)
@@ -139,6 +139,9 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
             .host_append_final_default_inputs_to_target(target_num);
     }
 
+    /// This method is used by hosts *whenever* they receive inputs from a peer; the act of the host RXing inputs *is* their finalization.
+    ///
+    /// For a guest, this method is used when they receive finalized inputs from the host.
     pub fn receive_finalized_input_slice_for_player(
         &mut self,
         slice: PlayerInputSlice<T>,
@@ -151,12 +154,13 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
     /// This method builds the PeerwiseFinalizedInput mapping
     /// based on this buffer's state.
     pub fn get_peerwise_finalized_inputs(&self) -> PeerwiseFinalizedInputsSeen {
-        let ack = PeerwiseFinalizedInputsSeen::new(
-            self.buffers
+        let ack = PeerwiseFinalizedInputsSeen::new_from_observed(
+            self.num_players,
+            &self
+                .buffers
                 .iter()
-                .enumerate()
-                .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs()))
-                .collect(),
+                .map(|buf| buf.finalized_inputs())
+                .collect::<Vec<_>>(),
         );
         ack
     }

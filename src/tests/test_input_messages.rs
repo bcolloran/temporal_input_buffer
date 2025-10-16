@@ -12,7 +12,7 @@ use crate::{
 #[test_case(MsgPayload::<PlayerInput>::Empty; "empty")]
 #[test_case(MsgPayload::<PlayerInput>::Invalid; "invalid")]
 #[test_case(MsgPayload::<PlayerInput>::GuestToHostAckFinalization(
-    PeerwiseFinalizedInputsSeen::new(HashMap::from([(PlayerNum(1), 3u32)]))
+    PeerwiseFinalizedInputsSeen::new_test(HashMap::from([(PlayerNum(1), 3u32)]))
 ); "ack finalization")]
 #[test_case(MsgPayload::<PlayerInput>::HostToLobbyFinalizedSlice(
     HostFinalizedSlice::<PlayerInput>::new_test(PlayerNum(2), 5, 0, 2)

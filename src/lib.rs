@@ -1,15 +1,25 @@
 #![feature(duration_millis_float)]
 
-pub mod ewma;
-pub mod input_buffer;
-pub mod input_messages;
-pub mod input_trait;
-pub mod multiplayer_input_buffer;
-pub mod multiplayer_input_manager;
-pub mod multiplayer_input_manager_guest;
-pub mod multiplayer_input_manager_host;
-pub mod peerwise_finalized_input;
-pub mod util_types;
+mod ewma;
+mod finalized_observations_per_guest;
+mod input_buffer;
+mod input_messages;
+mod input_trait;
+mod multiplayer_input_buffer;
+mod multiplayer_input_manager;
+mod multiplayer_input_manager_guest;
+mod multiplayer_input_manager_host;
+mod peerwise_finalized_input;
+mod util_types;
+
+pub use crate::{
+    input_buffer::InputStatus,
+    input_messages::MsgPayload,
+    multiplayer_input_manager::MultiplayerInputManager,
+    multiplayer_input_manager_guest::GuestInputMgr,
+    multiplayer_input_manager_host::HostInputMgr,
+    util_types::{PlayerInputSlice, PlayerNum},
+};
 
 #[cfg(test)]
 pub mod tests;

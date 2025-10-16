@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use crate::{ewma::Ewma, input_trait::SimInput};
+use crate::{
+    ewma::Ewma, finalized_observations_per_guest::FinalizedObservationsPerGuest,
+    input_trait::SimInput,
+};
 
 use super::{
     input_messages::{HostFinalizedSlice, MsgPayload},
     multiplayer_input_buffer::MultiplayerInputBuffers,
     multiplayer_input_manager::MultiplayerInputManager,
-    peerwise_finalized_input::PeerwiseFinalizedInputsSeen,
     util_types::PlayerNum,
 };
 
@@ -42,7 +44,7 @@ pub struct HostInputMgr {
     /// Keys: player_num of GUEST
     /// Values: the PeerwiseFinalizedInput of for each other peer,
     /// as seen by this GUEST.
-    pub(super) guests_finalized_observations: HashMap<PlayerNum, PeerwiseFinalizedInputsSeen>,
+    pub(super) guests_finalized_observations: FinalizedObservationsPerGuest,
 
     /// CONFIG SETTING
     /// The maximum number of ticks that a guest can be behind the host
@@ -59,9 +61,9 @@ pub struct HostInputMgr {
 }
 
 impl HostInputMgr {
-    fn new(max_guest_ticks_behind: u32) -> Self {
+    fn new(max_guest_ticks_behind: u32, num_players: u8) -> Self {
         Self {
-            guests_finalized_observations: HashMap::default(),
+            guests_finalized_observations: FinalizedObservationsPerGuest::new(num_players),
             max_guest_ticks_behind,
             pong_send_times: HashMap::default(),
             rtts: HashMap::default(),
@@ -79,7 +81,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     ) -> Self {
         Self {
             buffers: MultiplayerInputBuffers::new(num_players, max_ticks_to_predict_locf),
-            inner: HostInputMgr::new(max_guest_ticks_behind),
+            inner: HostInputMgr::new(max_guest_ticks_behind, num_players),
             own_player_num: HOST_PLAYER_NUM,
         }
     }
@@ -95,7 +97,9 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     /// Finalize a slice of inputs to the input buffer for
     /// the player with the given player_num.
     pub fn rx_guest_input_slice(&mut self, player_num: PlayerNum, msg: MsgPayload<T>) {
-        self.add_input_observations_if_needed(player_num.into());
+        #[cfg(debug_assertions)]
+        assert!(player_num != HOST_PLAYER_NUM);
+        // self.add_input_observations_if_needed(player_num.into());
         if let Ok(input_slice) = msg.try_into() {
             self.buffers
                 .receive_finalized_input_slice_for_player(input_slice, player_num);
@@ -106,20 +110,20 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
 
     /// The host input manager should add input observations for each guest
     /// as soon it becomes aware of them.
-    fn add_input_observations_if_needed(&mut self, player_num: PlayerNum) {
-        self.inner
-            .guests_finalized_observations
-            .entry(player_num)
-            .or_insert_with(PeerwiseFinalizedInputsSeen::default);
-    }
+    // fn add_input_observations_if_needed(&mut self, player_num: PlayerNum) {
+    //     #[cfg(debug_assertions)]
+    //     assert!(player_num != HOST_PLAYER_NUM);
+    //     self.inner
+    //         .guests_finalized_observations
+    //         .entry(player_num)
+    //         .or_insert_with(PeerwiseFinalizedInputsSeen::default);
+    // }
 
     pub fn rx_finalized_ticks_observations(&mut self, player_num: PlayerNum, msg: MsgPayload<T>) {
-        if let Ok(new_ack) = msg.try_into() {
+        if let MsgPayload::GuestToHostAckFinalization(new_ack) = msg {
             self.inner
                 .guests_finalized_observations
-                .entry(player_num)
-                .or_insert_with(PeerwiseFinalizedInputsSeen::default)
-                .update(new_ack);
+                .update_guest_observation(player_num, new_ack);
         }
     }
 
@@ -181,7 +185,10 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     /// needed by guests
     pub fn get_msg_finalized_slice(&self, player_num: PlayerNum) -> MsgPayload<T> {
         // get the earliest tick that has been finalized across all peers
-        let start = self.get_earliest_num_observed_final_for_peer(player_num.into());
+        let start = self
+            .inner
+            .guests_finalized_observations
+            .get_earliest_num_observed_final_for_peer(player_num.into());
 
         let slice = self
             .buffers
@@ -195,7 +202,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
         .into()
     }
 
-    // // CatchUp //////////////////////////////
+    // // Catch Up //////////////////////////////
 
     /// Checks whether the newest input tick seen by the host is more than
     /// max_guest_ticks_behind ticks behind the host's local tick.
@@ -222,7 +229,10 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
             self.buffers
                 .append_final_default_inputs_to_target(player_num, target_num_final_inputs);
 
-            let start = self.get_earliest_num_observed_final_for_peer(player_num);
+            let start = self
+                .inner
+                .guests_finalized_observations
+                .get_earliest_num_observed_final_for_peer(player_num);
 
             let slice = self.buffers.get_slice_to_end_for_peer(player_num, start);
 
@@ -250,14 +260,14 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     ///
     /// I.e., this is the latest finalized input for this peer that can be sent
     /// which will leave no gap in finalization for any other peer.
-    pub(super) fn get_earliest_num_observed_final_for_peer(&self, player_num: PlayerNum) -> u32 {
-        self.inner
-            .guests_finalized_observations
-            .values()
-            .map(|v| v.get(player_num))
-            .min()
-            .unwrap_or(0)
-    }
+    // pub(super) fn get_earliest_num_observed_final_for_peer(&self, player_num: PlayerNum) -> u32 {
+    //     self.inner
+    //         .guests_finalized_observations
+    //         .values()
+    //         .map(|v| v.get(player_num))
+    //         .min()
+    //         .unwrap_or(0)
+    // }
 
     // info and debug //////////////////////////////
     pub fn rtts_by_player(&self) -> Vec<(u8, f32)> {
@@ -266,5 +276,15 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
             .iter()
             .map(|(k, v)| ((*k).into(), v.value()))
             .collect()
+    }
+
+    #[cfg(test)]
+    pub(super) fn test_get_earliest_num_observed_final_for_peer(
+        &self,
+        player_num: PlayerNum,
+    ) -> u32 {
+        self.inner
+            .guests_finalized_observations
+            .get_earliest_num_observed_final_for_peer(player_num)
     }
 }

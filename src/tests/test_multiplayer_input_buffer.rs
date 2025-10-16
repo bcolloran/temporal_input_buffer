@@ -22,8 +22,8 @@ fn test_finalized_ticks() {
     assert_eq!(buffers.get_num_finalized_inputs(1.into()), 1);
     assert_eq!(buffers.get_num_finalized_inputs(2.into()), 0);
 
-    let finalized_ticks = buffers.get_num_finalized_inputs_per_peer();
-    assert_eq!(finalized_ticks.get(&1.into()), Some(&1u32));
+    let finalized_ticks = buffers.get_peerwise_finalized_inputs();
+    assert_eq!(finalized_ticks.get(1.into()), 1u32);
 }
 
 #[test]

@@ -24,20 +24,37 @@ impl Display for PeerwiseFinalizedInputsSeen {
 }
 
 impl PeerwiseFinalizedInputsSeen {
-    pub fn new(map: HashMap<PlayerNum, u32>) -> Self {
+    pub fn new(num_players: u8) -> Self {
+        Self(HashMap::from_iter(
+            (0..num_players).map(|i| (PlayerNum(i), 0)),
+        ))
+    }
+
+    pub fn new_from_observed(num_players: u8, observed: &[u32]) -> Self {
+        assert!(observed.len() as u8 == num_players);
+        let mut map = HashMap::new();
+        for (i, &tick) in observed.iter().enumerate() {
+            map.insert(PlayerNum(i as u8), tick);
+        }
+        Self(map)
+    }
+
+    #[cfg(test)]
+    pub fn new_test(map: HashMap<PlayerNum, u32>) -> Self {
         Self(map)
     }
     pub fn inner(&self) -> HashMap<PlayerNum, u32> {
         self.0.clone()
     }
 
+    /// Get the number of finalized inputs seen for a given player_num.
     pub fn get(&self, player_num: PlayerNum) -> u32 {
         self.0.get(&player_num).copied().unwrap_or(0)
     }
 
     /// Update the ack with the ticks from another ack
     /// if the other ack has a newer tick for the same player_num.
-    pub fn update(&mut self, other: PeerwiseFinalizedInputsSeen) {
+    pub fn merge(&mut self, other: PeerwiseFinalizedInputsSeen) {
         for (player_num, tick) in other.0.iter() {
             if let Some(existing_tick) = self.0.get(player_num) {
                 if tick > existing_tick {
@@ -49,25 +66,25 @@ impl PeerwiseFinalizedInputsSeen {
         }
     }
 
-    /// Returns a new FinalizedTicksAck where each entry is the oldest of the two
-    /// ticks for the same player_num
-    pub fn pairwise_oldest(
-        &self,
-        other: &PeerwiseFinalizedInputsSeen,
-    ) -> PeerwiseFinalizedInputsSeen {
-        let mut ack = self.clone();
+    // /// Returns a new PeerwiseFinalizedInputsSeen where each entry is the oldest of the two
+    // /// ticks for the same player_num
+    // pub fn pairwise_oldest(
+    //     &self,
+    //     other: &PeerwiseFinalizedInputsSeen,
+    // ) -> PeerwiseFinalizedInputsSeen {
+    //     let mut ack = self.clone();
 
-        for (player_num, tick) in other.0.iter() {
-            if let Some(existing_tick) = ack.0.get(player_num) {
-                if tick < existing_tick {
-                    ack.0.insert(*player_num, *tick);
-                }
-            } else {
-                ack.0.insert(*player_num, *tick);
-            }
-        }
-        ack
-    }
+    //     for (player_num, tick) in other.0.iter() {
+    //         if let Some(existing_tick) = ack.0.get(player_num) {
+    //             if tick < existing_tick {
+    //                 ack.0.insert(*player_num, *tick);
+    //             }
+    //         } else {
+    //             ack.0.insert(*player_num, *tick);
+    //         }
+    //     }
+    //     ack
+    // }
 
     pub fn earliest_input_finalized_by_all(&self) -> u32 {
         self.0.values().copied().min().unwrap_or(0)
@@ -86,7 +103,7 @@ mod tests {
         map.insert(PlayerNum(1), 10);
         map.insert(PlayerNum(2), 20);
 
-        let ack = PeerwiseFinalizedInputsSeen::new(map);
+        let ack = PeerwiseFinalizedInputsSeen::new_test(map);
         assert_eq!(ack.get(1.into()), 10);
         assert_eq!(ack.get(2.into()), 20);
         assert_eq!(ack.get(3.into()), 0);
@@ -95,32 +112,32 @@ mod tests {
     #[test]
     fn test_update() {
         let mut ack1 =
-            PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
-        let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
+            PeerwiseFinalizedInputsSeen::new_test(HashMap::from([(1.into(), 10), (2.into(), 20)]));
+        let ack2 = PeerwiseFinalizedInputsSeen::new_test(HashMap::from([
             (1.into(), 15),
             (2.into(), 15),
             (3.into(), 25),
         ]));
 
-        ack1.update(ack2);
+        ack1.merge(ack2);
         assert_eq!(ack1.get(1.into()), 15);
         assert_eq!(ack1.get(2.into()), 20);
         assert_eq!(ack1.get(3.into()), 25);
     }
 
-    #[test]
-    fn test_pairwise_oldest() {
-        let ack1 =
-            PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
-        let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
-            (1.into(), 15),
-            (2.into(), 15),
-            (3.into(), 25),
-        ]));
+    // #[test]
+    // fn test_pairwise_oldest() {
+    //     let ack1 =
+    //         PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
+    //     let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
+    //         (1.into(), 15),
+    //         (2.into(), 15),
+    //         (3.into(), 25),
+    //     ]));
 
-        let result = ack1.pairwise_oldest(&ack2);
-        assert_eq!(result.get(1.into()), 10);
-        assert_eq!(result.get(2.into()), 15);
-        assert_eq!(result.get(3.into()), 25);
-    }
+    //     let result = ack1.pairwise_oldest(&ack2);
+    //     assert_eq!(result.get(1.into()), 10);
+    //     assert_eq!(result.get(2.into()), 15);
+    //     assert_eq!(result.get(3.into()), 25);
+    // }
 }
