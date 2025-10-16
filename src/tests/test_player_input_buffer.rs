@@ -11,12 +11,12 @@ type T = PlayerInput;
 fn test_input_buffer_basics() {
     let mut buffer = PlayerInputBuffer::<T>::default();
     assert_eq!(buffer.num_inputs_collected(), 0);
-    assert_eq!(buffer.finalized_inputs, 0);
+    assert_eq!(buffer.finalized_inputs(), 0);
 
     let input = PlayerInputBinary::default();
     buffer.append_input(input);
     assert_eq!(buffer.num_inputs_collected(), 1);
-    assert_eq!(buffer.finalized_inputs, 0);
+    assert_eq!(buffer.finalized_inputs(), 0);
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn test_host_append_finalized() {
     let input = PlayerInputBinary::default();
 
     buffer.host_append_finalized(input);
-    assert_eq!(buffer.finalized_inputs, 1);
+    assert_eq!(buffer.finalized_inputs(), 1);
     assert_eq!(buffer.num_inputs_collected(), 1);
 }
 
@@ -58,13 +58,13 @@ fn test_receive_finalized_input_slice() {
     let slice = PlayerInputSlice::<T>::new_test(0, 5);
 
     buffer.receive_finalized_input_slice(slice);
-    assert_eq!(buffer.finalized_inputs, 5);
+    assert_eq!(buffer.finalized_inputs(), 5);
     assert_eq!(buffer.num_inputs_collected(), 5);
 
     // Test slice with gap (should be ignored)
     let slice_with_gap = PlayerInputSlice::<T>::new_test(6, 5);
     buffer.receive_finalized_input_slice(slice_with_gap);
-    assert_eq!(buffer.finalized_inputs, 5);
+    assert_eq!(buffer.finalized_inputs(), 5);
 }
 
 #[test]
@@ -72,12 +72,12 @@ fn test_receive_peer_input_slice() {
     let mut buffer = PlayerInputBuffer::<T>::default();
 
     // zero finalized inputs so far
-    assert_eq!(buffer.finalized_inputs, 0);
+    assert_eq!(buffer.finalized_inputs(), 0);
 
     buffer.receive_finalized_input_slice(PlayerInputSlice::<T>::new_test(0, 2));
 
     // now we have 2 finalized inputs
-    assert_eq!(buffer.finalized_inputs, 2);
+    assert_eq!(buffer.finalized_inputs(), 2);
 
     // rx a slice of inputs that have not been finalized
     let slice = PlayerInputSlice::<T>::new_test(0, 5);
@@ -85,13 +85,13 @@ fn test_receive_peer_input_slice() {
     // the buffer should now have 5 inputs, but still only 2 finalized
     buffer.receive_peer_input_slice(slice);
     assert_eq!(buffer.num_inputs_collected(), 5);
-    assert_eq!(buffer.finalized_inputs, 2);
+    assert_eq!(buffer.finalized_inputs(), 2);
 
     // rx 4 more finalized inputs
     buffer.receive_finalized_input_slice(PlayerInputSlice::<T>::new_test(2, 4));
     // now we have 6 inputs, and all of them are finalized
     assert_eq!(buffer.num_inputs_collected(), 6);
-    assert_eq!(buffer.finalized_inputs, 6);
+    assert_eq!(buffer.finalized_inputs(), 6);
 }
 
 #[test]
@@ -124,9 +124,9 @@ fn test_rx_out_of_order_final_slices() {
 
     // make sure the buffer still has the original inputs
     assert_eq!(buffer.num_inputs_collected(), 5);
-    assert_eq!(buffer.finalized_inputs, 5);
+    assert_eq!(buffer.finalized_inputs(), 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::default().to_bytes());
+        assert_eq!(buffer.test_helper_get_input(i), T::default().to_bytes());
     }
 }
 
@@ -136,9 +136,9 @@ fn test_host_finalize_default_thru_tick() {
     buffer.host_append_final_default_inputs_to_target(4);
 
     assert_eq!(buffer.num_inputs_collected(), 5);
-    assert_eq!(buffer.finalized_inputs, 5);
+    assert_eq!(buffer.finalized_inputs(), 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::default().to_bytes());
+        assert_eq!(buffer.test_helper_get_input(i), T::default().to_bytes());
     }
 }
 
@@ -147,15 +147,21 @@ fn test_host_finalize_default_thru_tick_wont_overwrite() {
     let mut buffer = PlayerInputBuffer::<T>::default();
     buffer.receive_finalized_input_slice(PlayerInputSlice::<T>::new_test(0, 5));
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8).to_bytes());
+        assert_eq!(
+            buffer.test_helper_get_input(i),
+            T::new_test_simple(i as u8).to_bytes()
+        );
     }
 
     buffer.host_append_final_default_inputs_to_target(4);
 
     // the buffer should still have the original inputs
     assert_eq!(buffer.num_inputs_collected(), 5);
-    assert_eq!(buffer.finalized_inputs, 5);
+    assert_eq!(buffer.finalized_inputs(), 5);
     for i in 0..5 {
-        assert_eq!(buffer.inputs[i], T::new_test_simple(i as u8).to_bytes());
+        assert_eq!(
+            buffer.test_helper_get_input(i),
+            T::new_test_simple(i as u8).to_bytes()
+        );
     }
 }

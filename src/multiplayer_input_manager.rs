@@ -107,6 +107,9 @@ impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
 
     /// Serializes the `PlayerInputBuffer<T>` for the given player number that is held in this
     /// `MultiplayerInputBuffers<T>`.
+    ///
+    /// If `reset_finalization` is true, the serialized buffer will have its finalized_inputs count reset to 0.
+    /// This can be useful when recording input buffers for replay, where we want to keep the inputs but not the finalization state.
     pub fn serialize_player_buffer(
         &self,
         player_num: PlayerNum,

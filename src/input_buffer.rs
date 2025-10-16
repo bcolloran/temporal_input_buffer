@@ -20,14 +20,38 @@ where
     T: SimInput,
 {
     /// The number of inputs that have been finalized.
-    pub finalized_inputs: u32,
-    pub inputs: Vec<T::Bytes>,
+    finalized_inputs: u32,
+    /// The inputs that have been collected, in order, including non-finalized inputs.
+    ///
+    /// Note that we never remove inputs from this buffer. Hanging on to them give some flexibility for logging and recording/replay, and means the entire input history is available to be sent to a peer that is catching up.
+    ///
+    /// Running the game at 60hz for 10 hours with 12byte inputs would require:
+    /// 60*(60*60*10)*12 = 25,920,000 bytes = ~25MB of memory, which is not unreasonable for modern systems.
+    /// This is vastly in excess of any plausible game session length.
+    ///
+    /// A more plausible upper bound is 2 hours at 60hz with 4byte inputs, which would require:
+    /// 60*(60*60*2)*4 = 1,728,000 bytes = ~1.7MB of memory.
+    ///
+    /// A more typical scenario might be 30 minutes at 60hz with 4byte inputs, which would require:
+    /// 60*(60*30)*4 = 432,000 bytes = ~0.4MB of memory.
+    inputs: Vec<T::Bytes>,
 }
 
 impl<T> PlayerInputBuffer<T>
 where
     T: SimInput,
 {
+    pub fn finalized_inputs(&self) -> u32 {
+        self.finalized_inputs
+    }
+
+    pub fn clone_with_finalization_reset(&self) -> Self {
+        Self {
+            finalized_inputs: 0,
+            inputs: self.inputs.clone(),
+        }
+    }
+
     pub fn from_bincode_bytes(bytes: &[u8]) -> Self {
         let decoded = from_bincode_bytes::<Self>(bytes);
         match decoded {
@@ -187,5 +211,16 @@ where
             let t = start + offset;
             self.set_next_final(t as u32, *input);
         }
+    }
+}
+
+/// Test helpers
+#[cfg(test)]
+impl<T> PlayerInputBuffer<T>
+where
+    T: SimInput,
+{
+    pub(crate) fn test_helper_get_input(&self, index: usize) -> T::Bytes {
+        self.inputs[index]
     }
 }

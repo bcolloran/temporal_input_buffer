@@ -65,7 +65,7 @@ fn test_buffer_len_per_player() {
     buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44).to_input());
     buffers.append_input(2.into(), PlayerInputBinary::new_test_simple(44).to_input());
 
-    let lengths = buffers.buffer_len_per_player();
+    let lengths = buffers.test_helper_buffer_len_per_player();
     assert_eq!(lengths.get(&1.into()), Some(&2));
     assert_eq!(lengths.get(&2.into()), Some(&4));
 }

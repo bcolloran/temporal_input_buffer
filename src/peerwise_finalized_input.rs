@@ -17,7 +17,7 @@ impl Display for PeerwiseFinalizedInputsSeen {
         let mut sorted = self.0.iter().collect::<Vec<_>>();
         sorted.sort_by_key(|&(p, _)| p);
         for (player_num, tick) in &sorted {
-            write!(f, "{}:{} ", player_num, tick)?;
+            write!(f, "{}={} ", player_num, tick)?;
         }
         write!(f, ")")
     }

@@ -111,14 +111,14 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
 
     /// gets the number of finalized inputs for this per
     pub fn get_num_finalized_inputs(&self, player_num: PlayerNum) -> u32 {
-        self.buffer_by_player_num(player_num).finalized_inputs
+        self.buffer_by_player_num(player_num).finalized_inputs()
     }
 
     pub fn get_num_finalized_inputs_per_peer(&self) -> HashMap<PlayerNum, u32> {
         self.buffers
             .iter()
             .enumerate()
-            .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs))
+            .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs()))
             .collect()
     }
 
@@ -155,18 +155,10 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
             self.buffers
                 .iter()
                 .enumerate()
-                .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs))
+                .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.finalized_inputs()))
                 .collect(),
         );
         ack
-    }
-
-    pub fn buffer_len_per_player(&self) -> HashMap<PlayerNum, u32> {
-        self.buffers
-            .iter()
-            .enumerate()
-            .map(|(player_num, buf)| (player_num.try_into().unwrap(), buf.inputs.len() as u32))
-            .collect()
     }
 
     /// Return the number of inputs that have been finalized for all players, i.e., the `min_i {f_i}` where `f_i` is the number of finalized inputs for player i.
@@ -175,7 +167,7 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
     pub fn get_num_finalized_inputs_across_peers(&self) -> u32 {
         self.buffers
             .iter()
-            .map(|buf| buf.finalized_inputs)
+            .map(|buf| buf.finalized_inputs())
             .min()
             .unwrap_or(0)
     }
@@ -206,6 +198,9 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
 
     /// Serializes the `PlayerInputBuffer<T>` for the given player number that is held in this
     /// `MultiplayerInputBuffers<T>`.
+    ///
+    /// If `reset_finalization` is true, the serialized buffer will have its finalized_inputs count reset to 0.
+    /// This can be useful when recording input buffers for replay, where we want to keep the inputs but not the finalization state.
     pub fn serialize_player_buffer(
         &self,
         player_num: PlayerNum,
@@ -213,9 +208,7 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
     ) -> Vec<u8> {
         let buf = self.buffer_by_player_num(player_num);
         if reset_finalization {
-            let mut buf = buf.clone();
-            buf.finalized_inputs = 0;
-            return to_bincode_bytes(&buf);
+            return to_bincode_bytes(&buf.clone_with_finalization_reset());
         }
         to_bincode_bytes(buf)
     }
@@ -224,5 +217,22 @@ impl<T: SimInput> MultiplayerInputBuffers<T> {
         let buf = from_bincode_bytes::<PlayerInputBuffer<T>>(data).unwrap();
         let num: usize = player_num.into();
         self.buffers[num] = buf;
+    }
+}
+
+// Test helper functions
+impl<T: SimInput> MultiplayerInputBuffers<T> {
+    #[cfg(test)]
+    pub(crate) fn test_helper_buffer_len_per_player(&self) -> HashMap<PlayerNum, u32> {
+        self.buffers
+            .iter()
+            .enumerate()
+            .map(|(player_num, buf)| {
+                (
+                    player_num.try_into().unwrap(),
+                    buf.num_inputs_collected() as u32,
+                )
+            })
+            .collect()
     }
 }
