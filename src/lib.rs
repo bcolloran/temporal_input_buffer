@@ -15,6 +15,7 @@ mod util_types;
 pub use crate::{
     input_buffer::InputStatus,
     input_messages::MsgPayload,
+    input_trait::SimInput,
     multiplayer_input_manager::MultiplayerInputManager,
     multiplayer_input_manager_guest::GuestInputMgr,
     multiplayer_input_manager_host::HostInputMgr,

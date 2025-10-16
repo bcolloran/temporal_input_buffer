@@ -153,12 +153,12 @@ where
     }
 
     /// gets slice from tick start to end. EXCLUSIVE
-    pub fn slice(&self, start: u32, end: u32) -> PlayerInputSlice<T> {
-        PlayerInputSlice {
-            inputs: self.inputs[start as usize..end as usize].to_vec(),
-            start,
-        }
-    }
+    // pub fn slice(&self, start: u32, end: u32) -> PlayerInputSlice<T> {
+    //     PlayerInputSlice {
+    //         inputs: self.inputs[start as usize..end as usize].to_vec(),
+    //         start,
+    //     }
+    // }
 
     pub fn slice_from(&self, start: u32) -> PlayerInputSlice<T> {
         PlayerInputSlice {
