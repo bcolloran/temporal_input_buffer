@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Install Rust toolchain (stable) via the rust-lang setup action
+      # Install Rust toolchain (nightly) via the rust-lang setup action
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: nightly
@@ -25,4 +25,36 @@ jobs:
         run: cargo build
 
       - name: Test
-        run: cargo test 
+        run: cargo test
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: llvm-tools-preview
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Collect coverage
+        run: >-
+          cargo llvm-cov --branch --workspace --all-targets --lcov
+          --output-path target/llvm-cov/lcov.info --html
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: target/llvm-cov/html/
+
+      - name: Upload coverage LCOV report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: target/llvm-cov/lcov.info
