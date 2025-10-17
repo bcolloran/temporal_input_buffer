@@ -1,3 +1,4 @@
+pub mod test_add_host_input_to_fill_needed;
 pub mod test_update_time_and_get_num_inputs_needed;
 
 use std::collections::HashMap;

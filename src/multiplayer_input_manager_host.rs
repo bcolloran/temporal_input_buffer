@@ -111,7 +111,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     /// Adds finalized copies of the most recently collected input to the host's own input buffer to fill up to the needed number of inputs based on the given delta time (in seconds as f32) since the last input was collected.
     pub fn add_host_input_to_fill_needed(&mut self, input: T, delta: f32) {
         let num_inputs_needed = self.update_time_and_get_num_inputs_needed(delta);
-        for _ in 0..num_inputs_needed - 1 {
+        for _ in 0..num_inputs_needed {
             self.add_host_input_directly(input.clone());
         }
     }

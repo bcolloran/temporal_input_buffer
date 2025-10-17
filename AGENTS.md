@@ -15,6 +15,21 @@ Everything in this crate must be pure, deterministic, atemporal, and side-effect
     - Tests should not rely on the current time or any external state that could change between runs. This ensures that tests are reliable and can be run in any environment without unexpected failures.
     - Tests should not depend on the passage of time. In particular, methods like `observe_rtt_ms_to_host(t)` accept input directly as a parameter, rather than internally reading the current time.
 
+- When writing tests, consider edge cases and boundary conditions. This helps to ensure that the system behaves correctly in all scenarios.
+
+
+## Testing *user-written* implementation code
+- When writing tests, on code that has been written before the agent's current task, the agent must first analyze the existing code within the context of the overall codebase, along with any comments or descriptions that explain its purpose and functionality.
+- The users code may contain errors or inconsistencies! The agents task is to be BRUTALLY CRITICAL of existing code, and to attempt to write tests that will poke holes in the code's correctness and reveal any bugs or issues.
+- The agent should identify and address these issues in the tests, ensuring that the tests accurately reflect the intended behavior of the code. It's ok if the tests reveal bugs or issues in the existing code; the goal is to ensure that the code behaves correctly and reliably. Failing tests are ok, and should be reported back to the user for fixing.
+- If the agent identifies any issues or inconsistencies in the existing code while writing tests, it should document these findings and provide suggestions for how to address them. However, the agent **must not** modify the existing code unless explicitly instructed to do so by the user.
+
+## Testing *agent-written* implementation code
+- When writing tests on code that the agent has written itself during the current task, the agent should ensure that the tests are comprehensive and cover all relevant scenarios for the newly written code.
+
+- The agent should write tests that cover the expected behavior of the newly written code, including edge cases and potential failure modes.
+
+- When writing tests for its own code, the agen may iteratively refine both the code and the tests to ensure that they are correct and reliable.
 
 
 ## Multiple cases in one test
