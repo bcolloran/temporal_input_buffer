@@ -28,7 +28,7 @@ impl FinalizedObservationsPerGuest {
 
     /// Update the observation for a given guest player_num with a new PeerwiseFinalizedInputsSeen.
     ///
-    /// In case observations arrive out of order, we merge the new observation with the existing one, keeping the maximum tick observed for each peer.
+    /// In case observations arrive out of order, we merge the new observation with the existing one, keeping the maximum tick observed for each peer. FIXME: see comment in PeerwiseFinalizedInputsSeen::merge_needs_to_be_fixed about a bug that caused us to have to use the "needs_to_be_fixed" version of merge.
     pub fn update_guest_observation(
         &mut self,
         guest_player_num: PlayerNum,
@@ -38,7 +38,7 @@ impl FinalizedObservationsPerGuest {
             .guest_index()
             .expect("not a guest player_num");
 
-        self.0[guest_idx].merge(observation);
+        self.0[guest_idx].merge_needs_to_be_fixed(observation);
     }
 }
 

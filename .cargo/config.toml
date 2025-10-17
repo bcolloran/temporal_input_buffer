@@ -1,2 +1,2 @@
 [alias]
-coverage = "llvm-cov --workspace --all-targets --lcov --output-path target/llvm-cov/lcov.info --html"
+coverage = "llvm-cov --branch --html"

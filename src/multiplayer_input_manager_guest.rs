@@ -66,22 +66,20 @@ pub struct GuestInputMgr {
     host_tick: i32,
 
     /// the number of ms it takes for a finalization to
-    /// make it from the host to this peer
+    /// make it from the host to this peer.
+    ///
+    /// `None` if no RTT samples have been observed yet
     rtt_ms_to_host: Option<Ewma>,
 
     pings: PingSendTimes,
-
-    /// CONFIG SETTINGS
-    ticks_per_sec: u32,
 }
 
 impl GuestInputMgr {
     // CONSTRUCTORS ///////////////////////////////////////////
-    pub fn new(ticks_per_sec: u32) -> Self {
+    pub fn new() -> Self {
         Self {
             host_tick: i32::MIN,
             rtt_ms_to_host: None,
-            ticks_per_sec,
             pings: PingSendTimes::new(),
         }
     }
@@ -90,8 +88,9 @@ impl GuestInputMgr {
 impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
     pub fn new(num_players: u8, own_player_num: PlayerNum, ticks_per_sec: u32) -> Self {
         Self {
+            ticks_per_sec,
             buffers: MultiplayerInputBuffers::new(num_players, DEFAULT_MAX_CATCHUP_INPUTS),
-            inner: GuestInputMgr::new(ticks_per_sec),
+            inner: GuestInputMgr::new(),
             own_player_num: own_player_num,
         }
     }
@@ -124,7 +123,7 @@ impl<T: SimInput> MultiplayerInputManager<T, GuestInputMgr> {
 
     pub fn one_way_in_ticks(&self) -> f32 {
         let rtt_sec = self.inner.rtt_ms_to_host.as_ref().unwrap().value() / 1000.0;
-        0.5 * rtt_sec * self.inner.ticks_per_sec as f32
+        0.5 * rtt_sec * self.ticks_per_sec as f32
     }
 
     pub fn num_inputs_needed(&self) -> u32 {

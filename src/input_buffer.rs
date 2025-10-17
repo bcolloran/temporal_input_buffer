@@ -1,6 +1,4 @@
-use crate::{
-    input_messages::from_bincode_bytes, input_trait::SimInput, util_types::PlayerInputSlice,
-};
+use crate::{input_trait::SimInput, util_types::PlayerInputSlice};
 
 use serde::{Deserialize, Serialize};
 

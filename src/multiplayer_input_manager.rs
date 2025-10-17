@@ -28,13 +28,16 @@ use super::{multiplayer_input_buffer::MultiplayerInputBuffers, util_types::Playe
 ///
 /// Type `T` is the inner type that this manager wraps, for either
 /// the host or the guest.
-pub struct MultiplayerInputManager<T, Buf>
+pub struct MultiplayerInputManager<T, R>
 where
     T: SimInput,
 {
     pub(super) buffers: MultiplayerInputBuffers<T>,
     pub(super) own_player_num: PlayerNum,
-    pub(super) inner: Buf,
+    /// CONFIG SETTINGS
+    pub(super) ticks_per_sec: u32,
+    /// specialized data for the a given role (either host or guest)
+    pub(super) inner: R,
 }
 
 impl<T: SimInput, Buf> MultiplayerInputManager<T, Buf> {
