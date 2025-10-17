@@ -54,6 +54,17 @@ impl PeerwiseFinalizedInputsSeen {
 
     /// Update the ack with the ticks from another ack
     /// if the other ack has a newer tick for the same player_num.
+    ///
+    /// FIXME: was encountering a bug where the input buffer was being re-initialized on guests, which caused the clients PeerwiseFinalizedInputsSeen to be reset to zeroes. This meant that when the host rxed the observation from the guest, because we only merge NEWER ticks, the host would ignore the guest's observation entirely, since all the ticks were zeroes. And thus, there would be a gap between what the host thought the guest had finalized and what the guest thought it had finalized. And this gap would never be filled, b/c the host would never send inputs prior to what it thought the guest had finalized.
+    /// To work around this, for now we just always update to the other ack's ticks regardless of whether they are newer or older.
+    pub fn merge_needs_to_be_fixed(&mut self, other: PeerwiseFinalizedInputsSeen) {
+        *self = other;
+    }
+
+    /// Update the ack with the ticks from another ack
+    /// if the other ack has a newer tick for the same player_num.
+    ///
+    /// FIXME: use this version!!
     pub fn merge(&mut self, other: PeerwiseFinalizedInputsSeen) {
         for (player_num, tick) in other.0.iter() {
             if let Some(existing_tick) = self.0.get(player_num) {
@@ -124,20 +135,4 @@ mod tests {
         assert_eq!(ack1.get(2.into()), 20);
         assert_eq!(ack1.get(3.into()), 25);
     }
-
-    // #[test]
-    // fn test_pairwise_oldest() {
-    //     let ack1 =
-    //         PeerwiseFinalizedInputsSeen::new(HashMap::from([(1.into(), 10), (2.into(), 20)]));
-    //     let ack2 = PeerwiseFinalizedInputsSeen::new(HashMap::from([
-    //         (1.into(), 15),
-    //         (2.into(), 15),
-    //         (3.into(), 25),
-    //     ]));
-
-    //     let result = ack1.pairwise_oldest(&ack2);
-    //     assert_eq!(result.get(1.into()), 10);
-    //     assert_eq!(result.get(2.into()), 15);
-    //     assert_eq!(result.get(3.into()), 25);
-    // }
 }
