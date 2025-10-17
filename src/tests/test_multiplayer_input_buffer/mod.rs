@@ -4,6 +4,8 @@ use crate::{
     util_types::{PlayerInputSlice, PlayerNum},
 };
 
+mod test_serialization;
+
 #[test]
 fn test_append_and_get_input() {
     let mut buffers = MultiplayerInputBuffers::<PlayerInput>::default();
