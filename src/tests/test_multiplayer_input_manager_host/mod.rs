@@ -37,7 +37,7 @@ fn test_snapshottable_sim_tick() {
 
     // Add some inputs for host
     for _ in 0..5 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Without any other player inputs, snapshottable tick should be 0
@@ -62,7 +62,7 @@ fn test_get_finalization_start_for_peer() {
 
     // Add some inputs for host
     for _ in 0..25 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // add inputs for only peers 2 and 3
@@ -224,7 +224,7 @@ fn test_get_msg_catch_up_with_no_acks() {
 
     // Add 10 inputs for host
     for _ in 0..10 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // If peer has not had any inputs added, the host
@@ -259,7 +259,7 @@ fn test_get_msg_catch_up_with_no_acks() {
     // The peer should now be 2 ticks behind, so the host
     // should send them inputs up to 8
     for _ in 0..2 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let msg = manager.get_msg_finalized_late_inputs_for_guest(peer_id.into());
     if let MsgPayload::HostToLobbyFinalizedSlice(slice) = msg {
@@ -288,7 +288,7 @@ fn test_get_msg_catch_up_with_guest_acks() {
 
     // Add  inputs for host
     for _ in 0..num_host_inputs_1 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // add ack of peer_id's inputs only up to tick 3;
@@ -324,7 +324,7 @@ fn test_get_msg_catch_up_with_guest_acks() {
 
     // Now advance the host's input to `num_host_inputs_2`
     for _ in num_host_inputs_1..num_host_inputs_2 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // add ack of peer_id's inputs only up to tick 15;
@@ -364,7 +364,7 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
 
     // Add 10 inputs for host
     for _ in 0..10 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     // rx 5 inputs for peer_2, and 7 inputs for peer_3
     manager.rx_guest_input_slice(
@@ -422,7 +422,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
 
     // Add 10 inputs for host
     for _ in 0..10 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     // rx 5 inputs for peer_2, and 7 inputs for peer_3
     manager.rx_guest_input_slice(
@@ -491,7 +491,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
 
     // Add 10 inputs for host
     for _ in 0..10 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     // rx 10 inputs for others
     manager.rx_guest_input_slice(

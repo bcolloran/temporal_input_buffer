@@ -97,7 +97,7 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
     /// On the host (including solo-mode self hosts), this means that the host input buffer tracks the elapsed time since it started collecting inputs (`sim_time`). Whenever a simulation rollout needs to be triggered, the host adds inputs into its buffer sufficient to be able to simulate up to the total target time, where the target time is found by adding the delta time (sec, f32) to the stored elapsed `sim_time`.
     ///
     /// This number of inputs to add is calculated based on the configured `ticks_per_sec` rate, and the current number of inputs in the host's own input buffer.
-    pub fn update_time_and_get_num_inputs_needed(&mut self, delta: f32) -> u32 {
+    pub(crate) fn update_time_and_get_num_inputs_needed(&mut self, delta: f32) -> u32 {
         self.inner.sim_time += delta;
         let expected_num_inputs = (self.inner.sim_time * self.ticks_per_sec as f32).ceil() as u32;
         let current_num_inputs = self.get_own_num_inputs();
@@ -108,10 +108,17 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
         }
     }
 
+    /// Adds finalized copies of the most recently collected input to the host's own input buffer to fill up to the needed number of inputs based on the given delta time (sec, f32).
+    pub fn add_host_input_to_fill_needed(&mut self, input: T, delta: f32) {
+        let num_inputs_needed = self.update_time_and_get_num_inputs_needed(delta);
+        for _ in 0..num_inputs_needed - 1 {
+            self.add_host_input_directly(input.clone());
+        }
+    }
+
     /// Add a finalized input to the hosts own input buffer
-    pub fn add_own_input(&mut self, input: T) {
-        self.buffers
-            .append_input_finalized(HOST_PLAYER_NUM, input.into());
+    pub(crate) fn add_host_input_directly(&mut self, input: T) {
+        self.buffers.append_input_finalized(HOST_PLAYER_NUM, input);
     }
 
     // PeerInputs //////////////////////////////

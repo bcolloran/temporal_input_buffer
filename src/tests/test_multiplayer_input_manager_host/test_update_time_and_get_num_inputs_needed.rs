@@ -87,7 +87,7 @@ fn test_after_adding_inputs_no_more_needed() {
 
     // Add the required inputs
     for _ in 0..num_inputs_needed {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Now call again with no time elapsed - should need 0 inputs
@@ -112,7 +112,7 @@ fn test_incremental_updates_with_inputs_added_60hz_minus_eps() {
     let num_inputs_1 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_1 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_1 = manager.get_own_num_inputs();
 
@@ -126,7 +126,7 @@ fn test_incremental_updates_with_inputs_added_60hz_minus_eps() {
     let num_inputs_2 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_2 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_2 = manager.get_own_num_inputs();
 
@@ -140,7 +140,7 @@ fn test_incremental_updates_with_inputs_added_60hz_minus_eps() {
     let num_inputs_3 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_3 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_3 = manager.get_own_num_inputs();
 
@@ -169,7 +169,7 @@ fn test_incremental_updates_with_inputs_added_60hz_plus_eps() {
     let num_inputs_1 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_1 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_1 = manager.get_own_num_inputs();
 
@@ -184,7 +184,7 @@ fn test_incremental_updates_with_inputs_added_60hz_plus_eps() {
     let num_inputs_2 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_2 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_2 = manager.get_own_num_inputs();
 
@@ -198,7 +198,7 @@ fn test_incremental_updates_with_inputs_added_60hz_plus_eps() {
     let num_inputs_3 = manager.update_time_and_get_num_inputs_needed(frame_delta);
 
     for _ in 0..num_inputs_3 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
     let count_after_3 = manager.get_own_num_inputs();
 
@@ -242,13 +242,13 @@ fn test_very_small_delta_accumulation() {
     assert_eq!(num_inputs, 1); // ceil(0.06) = 1
 
     // Add that one input
-    manager.add_own_input(PlayerInput::default());
+    manager.add_host_input_directly(PlayerInput::default());
 
     // Add more small deltas
     for _ in 0..14 {
         let num_inputs = manager.update_time_and_get_num_inputs_needed(small_delta);
         for _ in 0..num_inputs {
-            manager.add_own_input(PlayerInput::default());
+            manager.add_host_input_directly(PlayerInput::default());
         }
     }
 
@@ -289,7 +289,7 @@ fn test_adding_more_inputs_than_needed() {
 
     // But add 20 inputs
     for _ in 0..20 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Now calling update with more time should only count from current state
@@ -380,7 +380,7 @@ fn test_typical_game_loop_simulation() {
     for delta in deltas.iter() {
         let num_inputs = manager.update_time_and_get_num_inputs_needed(*delta);
         for _ in 0..num_inputs {
-            manager.add_own_input(PlayerInput::default());
+            manager.add_host_input_directly(PlayerInput::default());
         }
     }
 
@@ -407,19 +407,19 @@ fn test_variable_framerate() {
     // Good frame
     let num_inputs = manager.update_time_and_get_num_inputs_needed(0.016);
     for _ in 0..num_inputs {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Spike (4*0.016ms)
     let num_inputs = manager.update_time_and_get_num_inputs_needed(4.0 * 0.016);
     for _ in 0..num_inputs {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Back to normal
     let num_inputs = manager.update_time_and_get_num_inputs_needed(0.016);
     for _ in 0..num_inputs {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Verify total time coverage is correct
@@ -445,7 +445,7 @@ fn test_exactly_one_tick_boundary() {
     assert_eq!(num_inputs, 1);
 
     for _ in 0..num_inputs {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Another exact tick
@@ -453,7 +453,7 @@ fn test_exactly_one_tick_boundary() {
     assert!(num_inputs == 1);
 
     for _ in 0..num_inputs {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // Should have at least 2 inputs total
@@ -529,7 +529,7 @@ fn test_partial_input_fulfillment() {
 
     // Only add 5
     for _ in 0..5 {
-        manager.add_own_input(PlayerInput::default());
+        manager.add_host_input_directly(PlayerInput::default());
     }
 
     // More time passes needing 5 more inputs (15 total)
@@ -564,8 +564,8 @@ fn test_deterministic_repeated_calls() {
 
         // Add inputs to both
         for _ in 0..num1 {
-            manager1.add_own_input(PlayerInput::default());
-            manager2.add_own_input(PlayerInput::default());
+            manager1.add_host_input_directly(PlayerInput::default());
+            manager2.add_host_input_directly(PlayerInput::default());
         }
     }
 
@@ -605,7 +605,7 @@ fn test_alternating_add_and_update() {
 
         // Add the requested inputs
         for _ in 0..num_inputs {
-            manager.add_own_input(PlayerInput::default());
+            manager.add_host_input_directly(PlayerInput::default());
             total_added += 1;
         }
 
