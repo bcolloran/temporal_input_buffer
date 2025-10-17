@@ -14,9 +14,9 @@ impl Default for Ewma {
 }
 
 impl Ewma {
-    pub fn new(exp: f32) -> Self {
-        Self { exp, value: 0.0 }
-    }
+    // pub fn new(exp: f32) -> Self {
+    //     Self { exp, value: 0.0 }
+    // }
 
     pub fn new_with_value(exp: f32, value: f32) -> Self {
         Self { exp, value }
@@ -31,13 +31,13 @@ impl Ewma {
         self.value = a * x + (1.0 - a) * self.value;
     }
 
-    pub fn set(&mut self, x: f32) {
-        self.value = x;
-    }
+    // pub fn set(&mut self, x: f32) {
+    //     self.value = x;
+    // }
 
-    pub fn set_exp(&mut self, exp: f32) {
-        self.exp = exp;
-    }
+    // pub fn set_exp(&mut self, exp: f32) {
+    //     self.exp = exp;
+    // }
 
     /// Returns the current value of the EWMA.
     pub fn value(&self) -> f32 {

@@ -52,13 +52,13 @@ where
         }
     }
 
-    pub fn from_bincode_bytes(bytes: &[u8]) -> Self {
-        let decoded = from_bincode_bytes::<Self>(bytes);
-        match decoded {
-            Ok(buffer) => buffer,
-            Err(e) => panic!("Failed to decode PlayerInputBuffer: {}", e),
-        }
-    }
+    // pub fn from_bincode_bytes(bytes: &[u8]) -> Self {
+    //     let decoded = from_bincode_bytes::<Self>(bytes);
+    //     match decoded {
+    //         Ok(buffer) => buffer,
+    //         Err(e) => panic!("Failed to decode PlayerInputBuffer: {}", e),
+    //     }
+    // }
 
     pub fn is_finalized(&self, tick: u32) -> bool {
         tick < self.finalized_inputs
