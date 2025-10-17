@@ -30,6 +30,26 @@ To run the tests:
 cargo test
 ```
 
+## Coverage
+
+Install the coverage helper once:
+
+```bash
+cargo install cargo-llvm-cov
+```
+
+Then collect coverage for the full workspace:
+
+```bash
+cargo coverage
+```
+
+The alias expands to `cargo llvm-cov --workspace --all-targets --lcov
+--output-path target/llvm-cov/lcov.info --html`, producing an HTML report under
+`target/llvm-cov/html/` and an LCOV file at `target/llvm-cov/lcov.info`. Open
+the HTML report with `open target/llvm-cov/html/index.html` (or your
+platform's equivalent) to explore the results in a browser.
+
 This project requires the nightly Rust toolchain because it uses the
 `duration_millis_float` feature for timing utilities.  The required toolchain is
 specified in `rust-toolchain.toml` and will be downloaded automatically by
