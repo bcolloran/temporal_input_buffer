@@ -1,3 +1,5 @@
+pub mod test_update_time_and_get_num_inputs_needed;
+
 use std::collections::HashMap;
 
 use crate::{
@@ -14,7 +16,7 @@ const MAX_TICKS_PREDICT_LOCF: u32 = 5;
 #[test]
 fn test_new_manager() {
     let manager =
-        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
+        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF, 30);
     assert_eq!(manager.inner.max_guest_ticks_behind, 5);
 
     for i in 0..4 {
@@ -31,7 +33,7 @@ fn test_new_manager() {
 #[test]
 fn test_snapshottable_sim_tick() {
     let mut manager =
-        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(2, 5, MAX_TICKS_PREDICT_LOCF);
+        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(2, 5, MAX_TICKS_PREDICT_LOCF, 30);
 
     // Add some inputs for host
     for _ in 0..5 {
@@ -56,7 +58,7 @@ fn test_snapshottable_sim_tick() {
 #[test]
 fn test_get_finalization_start_for_peer() {
     let mut manager =
-        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF);
+        MultiplayerInputManager::<PlayerInput, HostInputMgr>::new(4, 5, MAX_TICKS_PREDICT_LOCF, 30);
 
     // Add some inputs for host
     for _ in 0..25 {
@@ -216,6 +218,7 @@ fn test_get_msg_catch_up_with_no_acks() {
         4,
         max_ticks_behind,
         MAX_TICKS_PREDICT_LOCF,
+        60,
     );
     let peer_id = 2;
 
@@ -279,6 +282,7 @@ fn test_get_msg_catch_up_with_guest_acks() {
         4,
         max_ticks_behind,
         MAX_TICKS_PREDICT_LOCF,
+        60,
     );
     let guest_id: PlayerNum = 2.into();
 
@@ -353,6 +357,7 @@ pub fn test_get_msg_host_finalized_slice_no_ack() {
         4,
         max_ticks_behind,
         MAX_TICKS_PREDICT_LOCF,
+        60,
     );
     let peer_2 = 2;
     let peer_3 = 3;
@@ -410,6 +415,7 @@ pub fn test_get_msg_host_finalized_slice_1_ack() {
         4,
         max_ticks_behind,
         MAX_TICKS_PREDICT_LOCF,
+        60,
     );
     let peer_2 = 2;
     let peer_3 = 3;
@@ -478,6 +484,7 @@ pub fn test_get_msg_host_finalized_slice_2_acks() {
         4,
         max_ticks_behind,
         MAX_TICKS_PREDICT_LOCF,
+        60,
     );
     let peer_2 = 2;
     let peer_3 = 3;

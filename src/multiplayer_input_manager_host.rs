@@ -58,6 +58,9 @@ pub struct HostInputMgr {
     ///
     /// For players in this list, when sending catch-up messages, the host will always send default inputs up to the host's own number of inputs.
     disconnected_players: Vec<PlayerNum>,
+
+    /// The time since the simulation started, in seconds.
+    sim_time: f32,
 }
 
 impl HostInputMgr {
@@ -68,6 +71,7 @@ impl HostInputMgr {
             pong_send_times: HashMap::default(),
             rtts: HashMap::default(),
             disconnected_players: Vec::default(),
+            sim_time: 0.0,
         }
     }
 }
@@ -78,11 +82,29 @@ impl<T: SimInput> MultiplayerInputManager<T, HostInputMgr> {
         num_players: u8,
         max_guest_ticks_behind: u32,
         max_ticks_to_predict_locf: u32,
+        ticks_per_sec: u32,
     ) -> Self {
         Self {
             buffers: MultiplayerInputBuffers::new(num_players, max_ticks_to_predict_locf),
             inner: HostInputMgr::new(max_guest_ticks_behind, num_players),
             own_player_num: HOST_PLAYER_NUM,
+            ticks_per_sec,
+        }
+    }
+
+    /// The input manager functions as the master clock and coordinator for simulation and multiplayer timing.
+    ///
+    /// On the host (including solo-mode self hosts), this means that the host input buffer tracks the elapsed time since it started collecting inputs (`sim_time`). Whenever a simulation rollout needs to be triggered, the host adds inputs into its buffer sufficient to be able to simulate up to the total target time, where the target time is found by adding the delta time (sec, f32) to the stored elapsed `sim_time`.
+    ///
+    /// This number of inputs to add is calculated based on the configured `ticks_per_sec` rate, and the current number of inputs in the host's own input buffer.
+    pub fn update_time_and_get_num_inputs_needed(&mut self, delta: f32) -> u32 {
+        self.inner.sim_time += delta;
+        let expected_num_inputs = (self.inner.sim_time * self.ticks_per_sec as f32).ceil() as u32;
+        let current_num_inputs = self.get_own_num_inputs();
+        if expected_num_inputs > current_num_inputs {
+            expected_num_inputs - current_num_inputs
+        } else {
+            0
         }
     }
 
