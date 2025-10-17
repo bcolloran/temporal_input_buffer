@@ -1,5 +1,7 @@
 # Temporal Input Buffer
 
+[![Coverage](https://codecov.io/gh/temporal-input-buffer/temporal_input_buffer/branch/main/graph/badge.svg)](https://codecov.io/gh/temporal-input-buffer/temporal_input_buffer)
+
 Temporal Input Buffer is a small Rust library for synchronizing player inputs in
 multiplayer games.  It provides data structures for collecting per-player input
 states, finalizing them on a host, and sharing finalized slices with peers.
