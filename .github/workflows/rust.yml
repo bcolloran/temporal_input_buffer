@@ -42,10 +42,15 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
-      - name: Collect coverage
+      - name: Collect LCOV coverage report
         run: >-
           cargo llvm-cov --branch --workspace --all-targets --lcov
-          --output-path target/llvm-cov/lcov.info --html
+          --output-path target/llvm-cov/lcov.info
+
+      - name: Generate HTML coverage report
+        run: >-
+          cargo llvm-cov report --branch --html --output-dir
+          target/llvm-cov/html
 
       - name: Upload coverage HTML report
         uses: actions/upload-artifact@v4
